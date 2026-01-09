@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList, SafeAreaView, Platform, StatusBar, Button, Alert, Modal, ScrollView, I18nManager } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList, SafeAreaView, Platform, StatusBar, Button, Alert, Modal, ScrollView, I18nManager, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Svg, { Path } from 'react-native-svg';
 import useStore from './src/store/useStore';
 
 // --- EDITORIAL DROP CAP COMPONENT ---
@@ -29,7 +30,7 @@ const DropCapText = ({ text, style, size = 16, color = '#2C2B29', boldFirst = tr
 // --- TRANSLATIONS ---
 const translations = {
   en: {
-    toggleLabel: 'עברית', // Button shows target language
+    toggleLabel: 'עברית',
     headline: "Own Your Day.\nOne Box at a Time.",
     philosophy: "Timeboxing is the productivity secret of the world's most successful people. Instead of a never-ending 'To-Do List' that creates anxiety, Timeboxing asks you to allocate a fixed 'box' of time for every task.",
     philosophy2: "By deciding when and where you will do something, you remove the decision fatigue that leads to procrastination.",
@@ -59,7 +60,7 @@ const translations = {
 };
 
 export default function App() {
-  // --- STATE ---
+  // --- STATE (ALL HOOKS AT TOP) ---
   const [inputText, setInputText] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -75,7 +76,7 @@ export default function App() {
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
 
-  // Store Hooks
+  // Store Hooks (UNCONDITIONAL)
   const tasks = useStore((state) => state.tasks);
   const addTask = useStore((state) => state.addTask);
   const removeTask = useStore((state) => state.removeTask);
@@ -102,6 +103,26 @@ export default function App() {
   const textAlign = isRTL ? 'right' : 'left';
   const flexDirection = isRTL ? 'row-reverse' : 'row';
 
+  // --- TIME & STATS LOGIC (HOISTED) ---
+  const now = new Date();
+  const currentH = now.getHours();
+  const currentM = now.getMinutes();
+  const roundedM = Math.floor(currentM / 15) * 15;
+  const currentSlot = `${currentH.toString().padStart(2, '0')}:${roundedM.toString().padStart(2, '0')}`;
+
+  const nextJumpM = roundedM + 15;
+  const nextJumpH = nextJumpM === 60 ? currentH + 1 : currentH;
+  const nextJumpMStr = (nextJumpM === 60 ? 0 : nextJumpM).toString().padStart(2, '0');
+  const jumpTimeStr = `${nextJumpH.toString().padStart(2, '0')}:${nextJumpMStr}`;
+
+  // Stats Logic for Home
+  const lastSession = history[0];
+  const deepRatio = lastSession ? `${Math.round((lastSession.deepBlocks / (lastSession.deepBlocks + lastSession.shallowBlocks || 1)) * 100)}/${Math.round((lastSession.shallowBlocks / (lastSession.deepBlocks + lastSession.shallowBlocks || 1)) * 100)}` : "75/25";
+  const recentHistory = history.slice(0, 7);
+  const avgFocus = recentHistory.length > 0
+    ? Math.round(recentHistory.reduce((acc, curr) => acc + curr.focusScore, 0) / recentHistory.length)
+    : 82;
+
   useEffect(() => {
     if (errorMsg) {
       const timer = setTimeout(() => setErrorMsg(null), 2000);
@@ -111,9 +132,8 @@ export default function App() {
 
   // --- GEN 15-MIN GRID ---
   const timeSlots: string[] = [];
-  for (let h = 7; h <= 22; h++) {
+  for (let h = 0; h < 24; h++) {
     for (let m = 0; m < 60; m += 15) {
-      if (h === 22 && m > 0) break;
       const timeString = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
       timeSlots.push(timeString);
     }
@@ -201,7 +221,7 @@ export default function App() {
     setActiveTaskId(null);
   };
 
-  // --- ATMOSPHERE COMPONENT ---
+  // --- SUB-COMPONENTS ---
   const Atmosphere = () => (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
       <View style={{ flex: 1, backgroundColor: '#FFFBF5' }} />
@@ -227,7 +247,6 @@ export default function App() {
     </View>
   );
 
-  // --- RENDER HELPERS ---
   const renderEditButton = (task: any) => (
     <TouchableOpacity
       style={styles.editButton}
@@ -238,15 +257,6 @@ export default function App() {
     </TouchableOpacity>
   );
 
-  // --- COMPUTED VALUES FOR HOME ---
-  const lastSession = history[0];
-  const deepRatio = lastSession ? `${Math.round((lastSession.deepBlocks / (lastSession.deepBlocks + lastSession.shallowBlocks || 1)) * 100)}/${Math.round((lastSession.shallowBlocks / (lastSession.deepBlocks + lastSession.shallowBlocks || 1)) * 100)}` : "75/25"; // Fallback/Mock
-  const recentHistory = history.slice(0, 7);
-  const avgFocus = recentHistory.length > 0
-    ? Math.round(recentHistory.reduce((acc, curr) => acc + curr.focusScore, 0) / recentHistory.length)
-    : 82; // Fallback/Mock
-
-  // --- UNIVERSAL HOME BUTTON ---
   const HomeButton = () => (
     <TouchableOpacity
       style={{
@@ -274,44 +284,222 @@ export default function App() {
     </TouchableOpacity>
   );
 
-  // --- RENDER CONTENT ---
+  const HelpButton = () => {
+    let targetStage = 0;
+    if (stage === 0) targetStage = 10;
+    if (stage === 1) targetStage = 11;
+    if (stage === 2) targetStage = 12;
+
+    if (stage < 0 || stage > 2) return null; // Only show on 0, 1, 2
+
+    return (
+      <TouchableOpacity
+        style={{
+          position: 'absolute',
+          top: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 10 : 50,
+          right: isRTL ? undefined : 25,
+          left: isRTL ? 25 : undefined,
+          zIndex: 100,
+          backgroundColor: 'rgba(255,255,255,0.8)',
+          borderRadius: 20,
+          padding: 8
+        }}
+        onPress={() => setStage(targetStage)}
+      >
+        <Ionicons name="help-circle-outline" size={24} color="#4A6741" />
+      </TouchableOpacity>
+    );
+  };
+
+  const BackButton = ({ targetStage }: { targetStage: number }) => (
+    <TouchableOpacity
+      style={{
+        position: 'absolute',
+        top: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 10 : 50,
+        left: isRTL ? undefined : 25,
+        right: isRTL ? 25 : undefined,
+        zIndex: 100,
+        backgroundColor: 'rgba(255,255,255,0.8)',
+        borderRadius: 20,
+        padding: 8
+      }}
+      onPress={() => setStage(targetStage)}
+    >
+      <Ionicons name="arrow-back" size={24} color="#4A6741" />
+    </TouchableOpacity>
+  );
+
+  const ProgressBar = ({ currentStage }: { currentStage: number }) => {
+    const steps = ["Collection", "Selection", "Grid"];
+    const blueColor = '#005BBB'; // User's preferred Blue
+    const screenWidth = Dimensions.get('window').width;
+    const paddingHorizontal = 20;
+    // Calculate widths
+    // We want 3 segments to span the width.
+    // They overlap by `arrowDepth`.
+    // Let's make them equal visual width.
+    // Visual Width = (TotalWidth) / 3.
+    // Segment Width (SVG) = Visual Width + ArrowDepth.
+
+    const arrowDepth = 15;
+    const height = 36;
+    const radius = 18; // Pill radius
+
+    const totalAvailableWidth = screenWidth - (paddingHorizontal * 2);
+    const stepVisualWidth = totalAvailableWidth / 3;
+    const stepSvgWidth = stepVisualWidth + arrowDepth;
+
+    // Correction: The last segment doesn't have an arrow sticking out, but it has the rounded end.
+    // The "Visual Width" logic is:
+    // Seg 1: Rounded Left ... Arrow Tip (Tip is Extra) -> Width = Visual + Tip
+    // Seg 2: Cutout (eats Tip space) ... Arrow Tip (Tip is Extra) -> Width = Visual + Tip. (Starts at -Tip).
+    // Seg 3: Cutout (eats Tip space) ... Rounded Right. -> Width = Visual. (Starts at -Tip).
+
+    // Simpler: Just make them all `stepSvgWidth`. Masking/Clipping handles the rest.
+
+    return (
+      <View style={{
+        flexDirection: 'row',
+        height: height,
+        width: '100%',
+        paddingHorizontal: paddingHorizontal,
+        marginTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 30 : 70, // Moved up to close gap with Icons (at 50)
+        marginBottom: 20,
+        zIndex: 50,
+      }}>
+        {steps.map((label, index) => {
+          const isActive = index === currentStage;
+          const isFirst = index === 0;
+          const isLast = index === steps.length - 1;
+
+          // Colors
+          const fillColor = isActive ? '#4A6741' : 'transparent'; // App Green for Active as requested in recent prompt
+          const strokeColor = '#4A6741'; // App Green stroke
+          const strokeWidth = isActive ? 0 : 1;
+          const textColor = isActive ? '#FFF' : '#4A6741';
+
+          // Path Generation
+          let d = "";
+          const w = stepVisualWidth; // The body width
+          const ad = arrowDepth;
+          const h = height;
+          const r = radius;
+
+          // Coordinate logic:
+          // We are drawing inside a box of width probably `stepVisualWidth + arrowDepth`.
+          // But to make them "Continuous", we just set fixed width and manage d path.
+
+          // Let's assume each View is `stepVisualWidth` wide.
+          // IsFirst: 
+          //   Owns [0...w].
+          //   Draws: Rounded Left, Lines... Arrow Tip goes to `w + ad`.
+          //   View style zIndex must be high to show tip? 
+          //   Actually, standard flow: Previous on TOP? or Next on TOP?
+          //   If Next has Cutout, it should be on TOP of Previous Tip.
+          //   So Index 0 (First) z=3. Index 1 z=2. Index 2 z=1? 
+          //   No. If Next is on TOP (z=2), then Next's Cutout (Transparent) reveals Prev's Tip (Solid).
+          //   Yes. Next must be on TOP of Prev.
+          //   Index 0: z=1. Index 1: z=2. Index 2: z=3.
+
+          // Width of SVG:
+          // We need enough space to draw the Tip if we are First/Middle.
+          // We need enough space to start at -ad if we are Middle/Last (to account for cutout).
+
+          // Let's use `stepVisualWidth + arrowDepth` as the basis for drawing.
+
+          if (isFirst) {
+            // M r,0 L w,0 L w+ad,h/2 L w,h L r,h Q 0,h 0,h-r L 0,r Q 0,0 r,0 Z
+            d = `M ${r},0 L ${w},0 L ${w + ad},${h / 2} L ${w},${h} L ${r},${h} Q 0,${h} 0,${h - r} L 0,${r} Q 0,0 ${r},0 Z`;
+          } else if (isLast) {
+            // M 0,0 L w-r,0 Q w,0 w,r L w,h-r Q w,h w-r,h L 0,h L ad,h/2 L 0,0 Z
+            // Note: Starts at 0,0 (which connects to prev tip). But `w` here is the visual width.
+            d = `M 0,0 L ${w - r},0 Q ${w},0 ${w},${r} L ${w},${h - r} Q ${w},${h} ${w - r},${h} L 0,${h} L ${ad},${h / 2} L 0,0 Z`;
+          } else {
+            // Middle
+            // M 0,0 L w,0 L w+ad,h/2 L w,h L 0,h L ad,h/2 L 0,0 Z
+            d = `M 0,0 L ${w},0 L ${w + ad},${h / 2} L ${w},${h} L 0,${h} L ${ad},${h / 2} L 0,0 Z`;
+          }
+
+          return (
+            <View key={index} style={{
+              width: stepVisualWidth,
+              height: height,
+              // Overlap logic:
+              // Segment N+1 starts `arrowDepth` to the Left? 
+              // No, we designed the paths to "mesh".
+              // First arrow ends at `w + ad`.
+              // Middle arrow starts at `0,0` but has a cutout `ad` deep.
+              // So Middle's "Body" starts at `ad`.
+              // If we place Middle at `x = w`, its `0,0` is at `w`.
+              // Its cutout `(0,0) -> (ad, h/2)` will overly the Previous's Tip `(w,0) -> (w+ad, h/2)`.
+              // Perfect match.
+              // So just place them side-by-side?
+              // YES. `width: stepVisualWidth`. The SVG can overflow.
+              // We need `overflow: 'visible'` on the View.
+              zIndex: index + 10,
+              // Wait, if Next is on Top (z > prev),
+              // Middle(Transparent Cutout) is on Top of First(Solid Tip).
+              // We see First(Solid Tip) through Middle(Cutout).
+              // Middle(Stroke) draws the border of Cutout.
+              // This is exactly what we want.
+            }}>
+              <Svg
+                width={stepVisualWidth + arrowDepth}
+                height={height}
+                style={{
+                  position: 'absolute',
+                  left: 0, // Draw from left edge of this segment
+                  top: 0,
+                }}
+              >
+                <Path
+                  d={d}
+                  fill={fillColor}
+                  stroke={strokeColor}
+                  strokeWidth={strokeWidth}
+                />
+              </Svg>
+
+              {/* Text Overlay */}
+              <View style={{
+                position: 'absolute',
+                top: 0, bottom: 0, left: 0, right: 0,
+                justifyContent: 'center', alignItems: 'center',
+                paddingLeft: isFirst ? 0 : arrowDepth, // Center visually in the "Body"
+                paddingRight: 0
+              }}>
+                <Text style={{
+                  color: textColor,
+                  fontWeight: 'bold',
+                  fontSize: 12,
+                  fontFamily: 'Georgia',
+                  textAlign: 'center'
+                }}>
+                  {label}
+                </Text>
+              </View>
+            </View>
+          );
+        })}
+      </View>
+    );
+  };
+
+  // --- CONTENT ASSIGNMENT ---
   let content;
 
   if (stage === -2) {
-    // HOME SCREEN - LOGIC
-    const history = useStore(state => state.history) || [];
-
-    // Calculate stats for cards
-    const lastSession = history[0];
-    const deepRatio = lastSession ? `${Math.round((lastSession.deepBlocks / (lastSession.deepBlocks + lastSession.shallowBlocks || 1)) * 100)}/${Math.round((lastSession.shallowBlocks / (lastSession.deepBlocks + lastSession.shallowBlocks || 1)) * 100)}` : "75/25";
-    const recentHistory = history.slice(0, 7);
-    const avgFocus = recentHistory.length > 0
-      ? Math.round(recentHistory.reduce((acc, curr) => acc + curr.focusScore, 0) / recentHistory.length)
-      : 82;
-
-    const now = new Date();
-    const currentH = now.getHours();
-    const currentM = now.getMinutes();
-    const roundedM = Math.floor(currentM / 15) * 15;
-    const currentSlot = `${currentH.toString().padStart(2, '0')}:${roundedM.toString().padStart(2, '0')}`;
-
-    // Find active task in this slot
+    // === HOME SCREEN ===
     const activeTaskIdInSlot = grid[currentSlot];
     const liveTask = activeTaskIdInSlot ? tasks.find(t => t.id === activeTaskIdInSlot) : null;
-
-    // Calculate time remaining (simplistic 15m block logic)
-    const nextJumpM = roundedM + 15;
-    const nextJumpH = nextJumpM === 60 ? currentH + 1 : currentH;
-    const nextJumpMStr = (nextJumpM === 60 ? 0 : nextJumpM).toString().padStart(2, '0');
-    const jumpTimeStr = `${nextJumpH.toString().padStart(2, '0')}:${nextJumpMStr}`;
 
     content = (
       <>
         {/* TOP BAR */}
         <View style={[styles.topBar, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           <View style={styles.profileCircle}><Text style={styles.profileText}>YX</Text></View>
-          <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row' }}>
-            <TouchableOpacity onPress={() => setStage(-1)} style={{ marginRight: 15 }}>
+          <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 15, alignItems: 'center' }}>
+            <TouchableOpacity onPress={() => setStage(-1)}>
               <Ionicons name="book-outline" size={24} color="#4A6741" />
             </TouchableOpacity>
             <Ionicons name="notifications-outline" size={24} color="#2C2B29" />
@@ -335,7 +523,7 @@ export default function App() {
             </View>
           </ScrollView>
 
-          {/* NEW: CURRENT TIME-BOX STATUS */}
+          {/* CURRENT TIME-BOX STATUS (Calendar Removed) */}
           <View style={{ marginTop: 0 }}>
             <Text style={[styles.sectionTitle, { textAlign: isRTL ? 'right' : 'left', marginBottom: 5, fontSize: 18 }]}>Current Time-Box Status</Text>
 
@@ -421,11 +609,11 @@ export default function App() {
       </>
     );
   } else if (stage === -1) {
-    // INTRO
+    // === INTRO ===
     content = (
       <ScrollView contentContainerStyle={styles.introContentContainer}>
-        {/* Language Toggle */}
-        <View style={{ width: '100%', alignItems: 'flex-end', marginBottom: 10, marginTop: 40 }}>
+        {/* Language Toggle - Fixed layout for RTL */}
+        <View style={{ width: '100%', alignItems: isRTL ? 'flex-start' : 'flex-end', marginBottom: 10, marginTop: 40 }}>
           <TouchableOpacity
             style={styles.langButton}
             onPress={() => setLanguage(language === 'en' ? 'he' : 'en')}
@@ -483,142 +671,148 @@ export default function App() {
       </ScrollView>
     );
   } else if (stage === 0) {
-    // COLLECTION
+    // === COLLECTION ===
     const taskCount = tasks.length;
     const canProceed = taskCount >= 3;
     const durationOptions = [15, 30, 45, 60, 90, 120];
     content = (
-      <View style={[styles.contentContainer, { marginTop: 40 }]}>
-        <Text style={styles.header}>The Collection</Text>
-        <Text style={styles.subHeader}>What's on your mind today?</Text>
+      <View style={{ flex: 1 }}>
+        <ProgressBar currentStage={0} />
+        <View style={[styles.contentContainer, { marginTop: 10 }]}>
+          <Text style={styles.header}>The Collection</Text>
+          <Text style={styles.subHeader}>What's on your mind today?</Text>
 
-        <TouchableOpacity style={styles.addButton} onPress={openNewTaskModal} activeOpacity={0.7}>
-          <Text style={styles.addButtonText}>+  Capture New Task</Text>
-        </TouchableOpacity>
-
-        {/* MODAL */}
-        <Modal animationType="fade" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>{editingTaskId ? 'Refine Task' : 'New Task'}</Text>
-
-              <Text style={styles.label}>Title</Text>
-              <TextInput style={styles.input} onChangeText={setNewTaskTitle} value={newTaskTitle} placeholder="e.g. Write Proposal" />
-
-              <Text style={styles.label}>Estimated Time</Text>
-              <View style={styles.durationContainer}>
-                {durationOptions.map(d => (
-                  <TouchableOpacity key={d} style={[styles.durationOption, newTaskDuration === d && styles.selectedDuration]} onPress={() => setNewTaskDuration(d)}>
-                    <Text style={[styles.durationText, newTaskDuration === d && styles.selectedDurationText]}>{d}m</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              <Text style={styles.label}>Location</Text>
-              <TextInput style={styles.input} onChangeText={setNewTaskLocation} value={newTaskLocation} placeholder="e.g. Coffee Shop" />
-
-              <Text style={styles.label}>Notes</Text>
-              <TextInput style={[styles.input, { height: 80 }]} multiline onChangeText={setNewTaskDescription} value={newTaskDescription} placeholder="Specifics..." />
-
-              <View style={styles.modalButtons}>
-                <TouchableOpacity onPress={() => setModalVisible(false)}>
-                  <Text style={styles.cancelText}>Discard</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.saveButton} onPress={handleSaveTask}>
-                  <Text style={styles.saveButtonText}>Save Entry</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </Modal>
-
-        <FlatList
-          data={tasks}
-          keyExtractor={item => item.id}
-          contentContainerStyle={{ paddingBottom: 20 }}
-          renderItem={({ item, index }) => (
-            <View style={styles.glassCard}>
-              <View style={{ flex: 1 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <View style={{ flex: 1 }}>
-                    <DropCapText text={item.title} size={18} style={styles.taskTitle} />
-                  </View>
-                  {renderEditButton(item)}
-                </View>
-                <Text style={styles.metaText}>{item.duration} min • {item.location || 'Anywhere'}</Text>
-              </View>
-              <TouchableOpacity onPress={() => removeTask(item.id)}>
-                <Text style={styles.deleteText}>✕</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        />
-
-        <View style={styles.footer}>
-          <TouchableOpacity
-            style={[styles.primaryButton, !canProceed && styles.disabledButton]}
-            onPress={() => canProceed ? setStage(1) : Alert.alert('Three Tasks Required', 'Please add at least 3 tasks to begin selection.')}
-            disabled={!canProceed}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.primaryButtonText}>{canProceed ? "Next: Selection" : "Add 3 Tasks to Proceed"}</Text>
+          <TouchableOpacity style={styles.addButton} onPress={openNewTaskModal} activeOpacity={0.7}>
+            <Text style={styles.addButtonText}>+  Capture New Task</Text>
           </TouchableOpacity>
+
+          {/* MODAL */}
+          <Modal animationType="fade" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>{editingTaskId ? 'Refine Task' : 'New Task'}</Text>
+
+                <Text style={styles.label}>Title</Text>
+                <TextInput style={styles.input} onChangeText={setNewTaskTitle} value={newTaskTitle} placeholder="e.g. Write Proposal" />
+
+                <Text style={styles.label}>Estimated Time</Text>
+                <View style={styles.durationContainer}>
+                  {durationOptions.map(d => (
+                    <TouchableOpacity key={d} style={[styles.durationOption, newTaskDuration === d && styles.selectedDuration]} onPress={() => setNewTaskDuration(d)}>
+                      <Text style={[styles.durationText, newTaskDuration === d && styles.selectedDurationText]}>{d}m</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                <Text style={styles.label}>Location</Text>
+                <TextInput style={styles.input} onChangeText={setNewTaskLocation} value={newTaskLocation} placeholder="e.g. Coffee Shop" />
+
+                <Text style={styles.label}>Notes</Text>
+                <TextInput style={[styles.input, { height: 80 }]} multiline onChangeText={setNewTaskDescription} value={newTaskDescription} placeholder="Specifics..." />
+
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity onPress={() => setModalVisible(false)}>
+                    <Text style={styles.cancelText}>Discard</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.saveButton} onPress={handleSaveTask}>
+                    <Text style={styles.saveButtonText}>Save Entry</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </Modal>
+
+          <FlatList
+            data={tasks}
+            keyExtractor={item => item.id}
+            contentContainerStyle={{ paddingBottom: 20 }}
+            renderItem={({ item, index }) => (
+              <View style={styles.glassCard}>
+                <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <View style={{ flex: 1 }}>
+                      <DropCapText text={item.title} size={18} style={styles.taskTitle} />
+                    </View>
+                    {renderEditButton(item)}
+                  </View>
+                  <Text style={styles.metaText}>{item.duration} min • {item.location || 'Anywhere'}</Text>
+                </View>
+                <TouchableOpacity onPress={() => removeTask(item.id)}>
+                  <Text style={styles.deleteText}>✕</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          />
+
+          <View style={styles.footer}>
+            <TouchableOpacity
+              style={[styles.primaryButton, !canProceed && styles.disabledButton]}
+              onPress={() => canProceed ? setStage(1) : Alert.alert('Three Tasks Required', 'Please add at least 3 tasks to begin selection.')}
+              disabled={!canProceed}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.primaryButtonText}>{canProceed ? "Next: Selection" : "Add 3 Tasks to Proceed"}</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     );
   } else if (stage === 1) {
-    // SELECTION
+    // === SELECTION ===
     const selectedCount = tasks.filter(t => t.selected).length;
     content = (
-      <View style={[styles.contentContainer, { marginTop: 40 }]}>
-        <Text style={styles.header}>The Selection</Text>
-        <Text style={styles.subHeader}>Identify your <Text style={{ fontWeight: 'bold', color: '#4A6741' }}>Vital 3</Text> for today.</Text>
-        <Text style={styles.counterText}>{selectedCount} / 3 Selected</Text>
+      <View style={{ flex: 1 }}>
+        <ProgressBar currentStage={1} />
+        <View style={[styles.contentContainer, { marginTop: 10 }]}>
+          <Text style={styles.header}>The Selection</Text>
+          <Text style={styles.subHeader}>Identify your <Text style={{ fontWeight: 'bold', color: '#4A6741' }}>Vital 3</Text> for today.</Text>
+          <Text style={styles.counterText}>{selectedCount} / 3 Selected</Text>
 
-        <FlatList
-          data={tasks}
-          keyExtractor={item => item.id}
-          contentContainerStyle={{ paddingBottom: 20 }}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={[styles.glassCard, item.selected && styles.selectedGlassCard]}
-              onPress={() => {
-                if (!item.selected && selectedCount >= 3) {
-                  Alert.alert('Limit Reached', 'Focus means saying no. Only 3 allowed.');
-                  return;
-                }
-                toggleTask(item.id);
-              }}
-              activeOpacity={0.8}
-            >
-              <View style={{ flex: 1 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <View style={{ flex: 1 }}>
-                    <DropCapText text={item.title} size={18} style={item.selected ? styles.taskTitleSelected : styles.taskTitle} />
+          <FlatList
+            data={tasks}
+            keyExtractor={item => item.id}
+            contentContainerStyle={{ paddingBottom: 20 }}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={[styles.glassCard, item.selected && styles.selectedGlassCard]}
+                onPress={() => {
+                  if (!item.selected && selectedCount >= 3) {
+                    Alert.alert('Limit Reached', 'Focus means saying no. Only 3 allowed.');
+                    return;
+                  }
+                  toggleTask(item.id);
+                }}
+                activeOpacity={0.8}
+              >
+                <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <View style={{ flex: 1 }}>
+                      <DropCapText text={item.title} size={18} style={item.selected ? styles.taskTitleSelected : styles.taskTitle} />
+                    </View>
+                    {!item.selected && renderEditButton(item)}
                   </View>
-                  {!item.selected && renderEditButton(item)}
+                  <Text style={styles.metaText}>{item.duration} min</Text>
                 </View>
-                <Text style={styles.metaText}>{item.duration} min</Text>
-              </View>
-              {item.selected && <Text style={styles.checkMark}>✓</Text>}
-            </TouchableOpacity>
-          )}
-        />
+                {item.selected && <Text style={styles.checkMark}>✓</Text>}
+              </TouchableOpacity>
+            )}
+          />
 
-        <View style={styles.footer}>
-          {selectedCount === 3 && (
-            <TouchableOpacity style={styles.primaryButton} onPress={() => setStage(2)} activeOpacity={0.8}>
-              <Text style={styles.primaryButtonText}>Confirm Priorities</Text>
+          <View style={styles.footer}>
+            {selectedCount === 3 && (
+              <TouchableOpacity style={styles.primaryButton} onPress={() => setStage(2)} activeOpacity={0.8}>
+                <Text style={styles.primaryButtonText}>Confirm Priorities</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity style={styles.secondaryButton} onPress={() => setStage(0)}>
+              <Text style={styles.secondaryButtonText}>Revise Collection</Text>
             </TouchableOpacity>
-          )}
-          <TouchableOpacity style={styles.secondaryButton} onPress={() => setStage(0)}>
-            <Text style={styles.secondaryButtonText}>Revise Collection</Text>
-          </TouchableOpacity>
+          </View>
         </View>
       </View>
     );
   } else if (stage === 2) {
-    // GRID
+    // === GRID ===
     const selectedTasks = tasks.filter(t => t.selected);
 
     const handleFinishDay = () => {
@@ -631,141 +825,152 @@ export default function App() {
     };
 
     content = (
-      <View style={[styles.contentContainer, { marginTop: 40 }]}>
-        <Text style={styles.header}>The Grid</Text>
-        <Text style={styles.subHeader}>Give every task a home.</Text>
+      <View style={{ flex: 1 }}>
+        <ProgressBar currentStage={2} />
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={[styles.contentContainer, { marginTop: 10, paddingBottom: 150 }]}>
+          <Text style={styles.header}>The Grid</Text>
+          <Text style={styles.subHeader}>Give every task a home.</Text>
 
-        {/* DOCK */}
-        <View style={styles.dockContainer}>
-          {selectedTasks.map(task => {
-            const isScheduled = Object.values(grid).includes(task.id);
-            const isActive = activeTaskId === task.id;
-            return (
-              <TouchableOpacity
-                key={task.id}
-                disabled={isScheduled}
-                style={[styles.dockCard, isActive && styles.activeDockCard, isScheduled && styles.scheduledDockCard]}
-                onPress={() => {
-                  setActiveTaskId(isActive ? null : task.id);
-                  setSelectedSlot(null);
-                }}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.dockText, isActive && styles.activeDockText, isScheduled && styles.scheduledDockText]}>
-                  {task.title}
-                </Text>
-                <Text style={[styles.dockSubText, isActive && styles.activeDockText]}>{task.duration}m</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        {/* 15 MIN GRID */}
-        <FlatList
-          data={timeSlots}
-          keyExtractor={item => item}
-          extraData={{ grid, selectedSlot, completedSlots }}
-          style={styles.gridList}
-          contentContainerStyle={{ paddingBottom: 40 }}
-          renderItem={({ item, index }) => {
-            const taskId = grid[item];
-            const task = taskId ? tasks.find(t => t.id === taskId) : null;
-            const isCompleted = completedSlots.includes(item);
-            const isSelected = selectedSlot === item;
-
-            const prevTime = timeSlots[index - 1];
-            const nextTime = timeSlots[index + 1];
-            const prevTaskId = prevTime ? grid[prevTime] : null;
-            const nextTaskId = nextTime ? grid[nextTime] : null;
-
-            const isStart = taskId && taskId !== prevTaskId;
-            const isSingle = taskId && taskId !== prevTaskId && taskId !== nextTaskId;
-
-            const mergedStyle = [];
-            if (taskId) {
-              if (isStart || isSingle) {
-                mergedStyle.push({ borderTopLeftRadius: 6, borderTopRightRadius: 6, marginTop: 4 });
-              }
-              const isEnd = taskId && taskId !== nextTaskId;
-              if (isEnd) {
-                mergedStyle.push({ borderBottomLeftRadius: 6, borderBottomRightRadius: 6, marginBottom: 4 });
-              }
-            }
-
-            const containerStyle = [];
-            if (taskId && taskId === nextTaskId) {
-              containerStyle.push({ marginBottom: 0 });
-            } else {
-              containerStyle.push({ marginBottom: 0 });
-            }
-
-            const showContent = isStart || isSingle;
-
-            return (
-              <View style={[styles.slotRowContainer, containerStyle]}>
-                <Text style={styles.timeLabel}>{item}</Text>
+          {/* DOCK */}
+          <View style={styles.dockContainer}>
+            {selectedTasks.map(task => {
+              const isScheduled = Object.values(grid).includes(task.id);
+              const isActive = activeTaskId === task.id;
+              return (
                 <TouchableOpacity
-                  style={styles.slotRow}
-                  onPress={() => handleSlotPress(item)}
-                  onLongPress={() => taskId && toggleSlotCompletion(item)}
-                  delayLongPress={300}
-                  activeOpacity={0.9}
-                >
-                  <View style={[
-                    styles.slotBox,
-                    task ? styles.filledSlot : styles.emptySlot,
-                    isCompleted && styles.completedSlot,
-                    isSelected && styles.selectedSlot,
-                    ...mergedStyle
-                  ]}>
-                    {task ? (
-                      <View>
-                        {showContent && (
-                          <View>
-                            <Text style={[
-                              isCompleted ? styles.completedTaskTitle : styles.taskTitleWhite,
-                              { fontSize: 14, fontFamily: 'Georgia', fontWeight: 'bold', letterSpacing: 0.5 }
-                            ]}>
-                              {task.title}
-                            </Text>
-                            {(task.description || task.location) && (
-                              <Text style={styles.slotDetailsTextWhite} numberOfLines={1}>
-                                {task.location ? `${task.location} ` : ''}
-                                {task.description ? `— ${task.description}` : ''}
-                              </Text>
-                            )}
-                          </View>
-                        )}
-                      </View>
-                    ) : (
-                      <View />
-                    )}
-                  </View>
-                </TouchableOpacity>
-
-                {isSelected && task && (
-                  <TouchableOpacity style={styles.deleteSlotButton} onPress={() => {
-                    removeTaskInstance(taskId);
+                  key={task.id}
+                  disabled={isScheduled}
+                  style={[styles.dockCard, isActive && styles.activeDockCard, isScheduled && styles.scheduledDockCard]}
+                  onPress={() => {
+                    setActiveTaskId(isActive ? null : task.id);
                     setSelectedSlot(null);
-                  }}>
-                    <Text style={styles.deleteSlotText}>✕</Text>
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.dockText, isActive && styles.activeDockText, isScheduled && styles.scheduledDockText]}>
+                    {task.title}
+                  </Text>
+                  <Text style={[styles.dockSubText, isActive && styles.activeDockText]}>{task.duration}m</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* 15 MIN GRID (MAPPED) */}
+          <View style={styles.gridList}>
+            {timeSlots.map((item, index) => {
+              const taskId = grid[item];
+              const task = taskId ? tasks.find(t => t.id === taskId) : null;
+              const isCompleted = completedSlots.includes(item);
+              const isSelected = selectedSlot === item;
+
+              const prevTime = timeSlots[index - 1];
+              const nextTime = timeSlots[index + 1];
+              const prevTaskId = prevTime ? grid[prevTime] : null;
+              const nextTaskId = nextTime ? grid[nextTime] : null;
+
+              const isStart = taskId && taskId !== prevTaskId;
+              const isSingle = taskId && taskId !== prevTaskId && taskId !== nextTaskId;
+
+              const mergedStyle: any[] = [];
+              if (taskId) {
+                if (isStart || isSingle) {
+                  mergedStyle.push({ borderTopLeftRadius: 6, borderTopRightRadius: 6, marginTop: 4 });
+                }
+                const isEnd = taskId && taskId !== nextTaskId;
+                if (isEnd) {
+                  mergedStyle.push({ borderBottomLeftRadius: 6, borderBottomRightRadius: 6, marginBottom: 4 });
+                }
+              }
+
+              const containerStyle: any[] = [];
+              containerStyle.push({ marginBottom: 0 });
+
+              const showContent = isStart || isSingle;
+
+              return (
+                <View key={item} style={[styles.slotRowContainer, containerStyle]}>
+                  <Text style={styles.timeLabel}>{item}</Text>
+                  <TouchableOpacity
+                    style={styles.slotRow}
+                    onPress={() => handleSlotPress(item)}
+                    onLongPress={() => taskId && toggleSlotCompletion(item)}
+                    delayLongPress={300}
+                    activeOpacity={0.9}
+                  >
+                    <View style={[
+                      styles.slotBox,
+                      task ? styles.filledSlot : styles.emptySlot,
+                      isCompleted && styles.completedSlot,
+                      isSelected && styles.selectedSlot,
+                      ...mergedStyle
+                    ]}>
+                      {task ? (
+                        <View>
+                          {showContent && (
+                            <View>
+                              <Text style={[
+                                isCompleted ? styles.completedTaskTitle : styles.taskTitleWhite,
+                                { fontSize: 14, fontFamily: 'Georgia', fontWeight: 'bold', letterSpacing: 0.5 }
+                              ]}>
+                                {task.title}
+                              </Text>
+                              {(task.description || task.location) && (
+                                <Text style={styles.slotDetailsTextWhite} numberOfLines={1}>
+                                  {task.location ? `${task.location} ` : ''}
+                                  {task.description ? `— ${task.description}` : ''}
+                                </Text>
+                              )}
+                            </View>
+                          )}
+                        </View>
+                      ) : (
+                        <View />
+                      )}
+                    </View>
                   </TouchableOpacity>
-                )}
-              </View>
-            );
-          }}
-        />
 
-        <View style={styles.footer}>
-          <TouchableOpacity style={styles.finishButton} onPress={handleFinishDay} activeOpacity={0.8}>
-            <Text style={styles.finishButtonText}>Finish Day</Text>
-          </TouchableOpacity>
+                  {isSelected && task && (
+                    <TouchableOpacity style={styles.deleteSlotButton} onPress={() => {
+                      removeTaskInstance(taskId);
+                      setSelectedSlot(null);
+                    }}>
+                      <Text style={styles.deleteSlotText}>✕</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              );
+            })}
+          </View>
 
-          <TouchableOpacity style={styles.secondaryButton} onPress={() => setStage(1)}>
-            <Text style={styles.secondaryButtonText}>Modify Plan</Text>
-          </TouchableOpacity>
-        </View>
+          <View style={styles.footer}>
+            <TouchableOpacity style={styles.finishButton} onPress={handleFinishDay} activeOpacity={0.8}>
+              <Text style={styles.finishButtonText}>Finish Day</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.secondaryButton} onPress={() => setStage(1)}>
+              <Text style={styles.secondaryButtonText}>Modify Plan</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
       </View>
+    );
+  } else if (stage === 10 || stage === 11 || stage === 12) {
+    // === HELP STAGES ===
+    let helpTitle = "";
+    let returnStage = 0;
+
+    if (stage === 10) { helpTitle = "Collection Help"; returnStage = 0; }
+    if (stage === 11) { helpTitle = "Selection Help"; returnStage = 1; }
+    if (stage === 12) { helpTitle = "Grid Help"; returnStage = 2; }
+
+    content = (
+      <>
+        <BackButton targetStage={returnStage} />
+        <View style={[styles.contentContainer, { marginTop: 40, alignItems: 'center', justifyContent: 'center', flex: 1 }]}>
+          <Text style={{ fontFamily: 'Georgia', fontSize: 24, fontWeight: 'bold', color: '#2C2B29', marginBottom: 20 }}>{helpTitle}</Text>
+        </View>
+      </>
     );
   }
 
@@ -774,6 +979,7 @@ export default function App() {
       <Atmosphere />
       {/* Show HomeButton on stages that need it (-1, 0, 1, 2, 3) */}
       {(stage === -1 || stage === 0 || stage === 1 || stage === 2 || stage === 3) && <HomeButton />}
+      <HelpButton />
       <StatusBar barStyle="dark-content" />
       {content}
     </SafeAreaView>
@@ -800,166 +1006,108 @@ const styles = StyleSheet.create({
   stepNumber: { fontSize: 40, fontFamily: 'Georgia', color: '#E0E0D0', fontWeight: 'bold', marginTop: -5 },
   stepTextContainer: { flex: 1 },
   stepTitle: { fontSize: 18, fontFamily: 'Georgia', fontWeight: 'bold', color: '#2C2B29', marginBottom: 4 },
-  stepDesc: { fontSize: 16, fontFamily: 'Georgia-Italic', color: '#777', lineHeight: 26 },
+  stepDesc: { fontSize: 15, fontFamily: 'Georgia-Italic', color: '#666' },
 
-  introButton: {
-    backgroundColor: '#4A6741',
-    width: '100%',
-    paddingVertical: 22,
-    borderRadius: 4,
-    alignItems: 'center',
-    marginTop: 20,
-    shadowColor: '#4A6741',
-    shadowOpacity: 0.4,
-    shadowRadius: 15,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 8
-  },
-  introButtonText: { color: '#FDFBF7', fontFamily: 'Georgia', fontSize: 18, fontWeight: 'bold', letterSpacing: 2, textTransform: 'uppercase' },
+  introButton: { backgroundColor: '#4A6741', paddingVertical: 18, alignItems: 'center', borderRadius: 12, shadowColor: '#4A6741', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5, width: '100%' },
+  introButtonText: { color: '#FFF', fontSize: 18, fontWeight: 'bold', letterSpacing: 1 },
 
-  // Lang Button
-  langButton: { paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: '#D0D0C0', borderRadius: 20 },
-  langButtonText: { fontSize: 12, fontFamily: 'Georgia', color: '#888' },
+  langButton: { padding: 8, backgroundColor: 'rgba(74, 103, 65, 0.1)', borderRadius: 20 },
+  langButtonText: { color: '#4A6741', fontSize: 14, fontWeight: 'bold' },
 
-  // GLOBAL HEADERS
-  header: { fontSize: 36, fontFamily: 'Georgia', color: '#2C2B29', marginBottom: 2, marginTop: -25, letterSpacing: -0.5 },
-  subHeader: { fontSize: 18, fontFamily: 'Georgia-Italic', color: '#888', marginBottom: 25 },
-  counterText: { fontSize: 14, fontFamily: 'Georgia', color: '#4A6741', fontWeight: 'bold', marginBottom: 15, textTransform: 'uppercase', letterSpacing: 1 },
+  // HOME
+  topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, paddingHorizontal: 25 },
+  profileCircle: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#E0E6E0', justifyContent: 'center', alignItems: 'center' },
+  profileText: { color: '#4A6741', fontWeight: 'bold' },
 
-  // CARDS (Glassmorphism)
-  glassCard: {
-    flexDirection: 'row',
-    padding: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)', // Translucent
-    marginBottom: 16,
-    borderRadius: 16, // Softer curves
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.6)',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    // Floating Shadow
-    shadowColor: '#9E9E96',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 15,
-    elevation: 3,
-  },
-  selectedGlassCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderColor: '#4A6741',
-    borderWidth: 1.5,
-  },
+  header: { fontSize: 32, fontFamily: 'Georgia', fontWeight: 'bold', color: '#2C2B29', marginBottom: 5 },
+  subHeader: { fontSize: 16, fontFamily: 'Georgia-Italic', color: '#666', marginBottom: 25 },
 
-  // TEXT
-  taskTitle: { color: '#2C2B29', fontSize: 18 },
-  taskTitleSelected: { color: '#4A6741', fontWeight: 'bold' },
-  taskTitleWhite: { color: '#FFF' },
-  completedTaskTitle: { color: 'rgba(255,255,255,0.7)', textDecorationLine: 'line-through' },
-  metaText: { fontSize: 13, fontFamily: 'Georgia-Italic', color: '#999', marginTop: 6 },
-  slotDetailsTextWhite: { fontSize: 12, fontFamily: 'Georgia-Italic', color: 'rgba(255,255,255,0.8)', marginTop: 2 },
+  sectionTitle: { fontSize: 20, fontFamily: 'Georgia', fontWeight: 'bold', color: '#2C2B29', marginBottom: 15 },
+  seeAll: { color: '#4A6741', fontSize: 14, fontWeight: 'bold' },
 
-  checkMark: { color: '#4A6741', fontSize: 20 },
-  deleteText: { color: '#CCC', fontSize: 20, padding: 8 },
+  cardScroll: { marginBottom: 25, flexGrow: 0 },
+  metricCard: { width: 140, height: 140, backgroundColor: '#FFF', borderRadius: 16, padding: 15, marginRight: 15, justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
+  flagIcon: { width: 40, height: 40, backgroundColor: '#F5F9F5', borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
+  metricValue: { fontSize: 24, fontWeight: 'bold', color: '#2C2B29', marginBottom: 4 },
+  metricLabel: { fontSize: 12, color: '#888', textAlign: 'center' },
 
-  editButton: { marginLeft: 10, paddingHorizontal: 10, paddingVertical: 5, backgroundColor: 'rgba(74, 103, 65, 0.05)', borderRadius: 12 },
-  editButtonText: { fontSize: 14, color: '#4A6741' },
+  sessionRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#EEE' },
+  rowIcon: { width: 36, height: 36, backgroundColor: '#F0F0F0', borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  rowTitle: { fontSize: 16, fontWeight: 'bold', color: '#2C2B29' },
+  rowSub: { fontSize: 13, color: '#888' },
+  rowValue: { fontSize: 16, fontWeight: 'bold', color: '#4A6741' },
 
-  // BUTTONS
-  addButton: {
-    padding: 20,
-    alignItems: 'center',
-    marginBottom: 30,
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: '#D0D0C0',
-    borderStyle: 'dashed',
-    borderRadius: 12
-  },
-  addButtonText: { color: '#888', fontFamily: 'Georgia', fontSize: 16, fontStyle: 'italic' },
+  bottomNav: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 85, backgroundColor: '#FFF', flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingBottom: 20, borderTopWidth: 1, borderTopColor: '#F0F0F0' },
+  navText: { fontSize: 10, color: '#888', marginTop: 4 },
+  centerNav: { top: -25 },
+  plusButton: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#4A6741', justifyContent: 'center', alignItems: 'center', shadowColor: '#4A6741', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
 
-  primaryButton: {
-    backgroundColor: '#2C2B29', // Deep charcoal/black
-    padding: 22,
-    borderRadius: 4,
-    alignItems: 'center',
-    shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5
-  },
-  primaryButtonText: { color: '#FFF', fontFamily: 'Georgia', fontSize: 16, fontWeight: 'bold', letterSpacing: 1.5, textTransform: 'uppercase' },
-  disabledButton: { backgroundColor: '#BBBBB0', shadowOpacity: 0 },
+  // COMMON
+  glassCard: { backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: 16, padding: 16, marginBottom: 12, flexDirection: 'row', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2, borderWidth: 1, borderColor: '#FFF' },
+  taskTitle: { fontSize: 16, fontWeight: '500', color: '#2C2B29' },
+  taskTitleSelected: { fontSize: 16, fontWeight: 'bold', color: '#4A6741' },
+  metaText: { fontSize: 12, color: '#888', marginTop: 4 },
+  checkMark: { fontSize: 18, color: '#4A6741', fontWeight: 'bold', marginLeft: 10 },
+  deleteText: { fontSize: 18, color: '#999', padding: 5 },
 
-  secondaryButton: { padding: 15, alignItems: 'center', marginTop: 10 },
-  secondaryButtonText: { color: '#999', fontFamily: 'Georgia', fontSize: 14, textDecorationLine: 'underline' },
+  primaryButton: { backgroundColor: '#2C2B29', paddingVertical: 16, borderRadius: 12, alignItems: 'center', marginTop: 10 },
+  primaryButtonText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
+  disabledButton: { backgroundColor: '#CCC' },
+  secondaryButton: { paddingVertical: 16, alignItems: 'center', marginTop: 5 },
+  secondaryButtonText: { color: '#666', fontSize: 16 },
 
-  finishButton: { backgroundColor: '#4A6741', padding: 22, borderRadius: 4, alignItems: 'center', marginBottom: 10 },
-  finishButtonText: { color: '#FFF', fontFamily: 'Georgia', fontSize: 16, fontWeight: 'bold', letterSpacing: 1.5, textTransform: 'uppercase' },
+  footer: { marginTop: 20 },
+  addButton: { borderWidth: 1, borderColor: '#4A6741', borderStyle: 'dashed', borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginBottom: 20, backgroundColor: 'rgba(74, 103, 65, 0.05)' },
+  addButtonText: { color: '#4A6741', fontSize: 16, fontWeight: '600' },
+  counterText: { fontSize: 14, color: '#4A6741', fontWeight: 'bold', marginBottom: 15, textTransform: 'uppercase', letterSpacing: 1 },
+  selectedGlassCard: { borderColor: '#4A6741', backgroundColor: '#F5F9F5' },
 
-  footer: { marginTop: 20, marginBottom: 50 },
+  // EDIT
+  editButton: { padding: 8 },
+  editButtonText: { fontSize: 16, color: '#888' },
 
-  // MODAL
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(255,251,245,0.95)', justifyContent: 'center', padding: 30 },
-  modalContent: { backgroundColor: '#FFF', padding: 30, borderRadius: 2, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 30, elevation: 10, borderWidth: 1, borderColor: '#F0F0F0' },
-  modalTitle: { fontSize: 26, fontFamily: 'Georgia', color: '#2C2B29', marginBottom: 25, textAlign: 'center', letterSpacing: 0.5 },
-  label: { fontFamily: 'Georgia', fontSize: 12, color: '#888', marginBottom: 8, marginTop: 15, letterSpacing: 1, textTransform: 'uppercase' },
-  input: { backgroundColor: '#FAFAFA', borderBottomWidth: 1, borderBottomColor: '#DDD', padding: 12, fontSize: 18, fontFamily: 'Georgia', color: '#333' },
-  saveButton: { backgroundColor: '#2C2B29', paddingVertical: 14, paddingHorizontal: 30, borderRadius: 2 },
-  saveButtonText: { color: '#FFF', fontFamily: 'Georgia', fontSize: 14, fontWeight: 'bold', letterSpacing: 1 },
-  cancelText: { color: '#999', fontFamily: 'Georgia', fontSize: 16 },
-  modalButtons: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 40 },
-
-  durationContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  durationOption: { paddingVertical: 10, paddingHorizontal: 16, backgroundColor: '#FFF', borderWidth: 1, borderColor: '#EEE' },
-  selectedDuration: { backgroundColor: '#4A6741', borderColor: '#4A6741' },
-  durationText: { color: '#999', fontSize: 14, fontFamily: 'Georgia' },
-  selectedDurationText: { color: '#FFF', fontWeight: 'bold' },
+  // DOCK
+  dockContainer: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 20 },
+  dockCard: { backgroundColor: '#FFF', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, marginRight: 8, marginBottom: 8, borderWidth: 1, borderColor: '#E0E0E0' },
+  activeDockCard: { borderColor: '#4A6741', backgroundColor: '#4A6741' },
+  scheduledDockCard: { opacity: 0.5, backgroundColor: '#F0F0F0', borderColor: 'transparent' },
+  dockText: { fontSize: 14, color: '#2C2B29' },
+  activeDockText: { color: '#FFF' },
+  scheduledDockText: { textDecorationLine: 'line-through', color: '#888' },
+  dockSubText: { fontSize: 10, color: '#666', marginTop: 2 },
 
   // GRID
-  dockContainer: { flexDirection: 'row', gap: 12, marginBottom: 30 },
-  dockCard: { flex: 1, padding: 16, backgroundColor: 'rgba(255,255,255,0.6)', borderWidth: 1, borderColor: '#EAEAEA', borderRadius: 8, alignItems: 'center' },
-  activeDockCard: { borderColor: '#4A6741', borderWidth: 1, backgroundColor: '#FFF' },
-  scheduledDockCard: { opacity: 0.4 },
-  dockText: { fontSize: 13, fontFamily: 'Georgia', fontWeight: 'bold', color: '#2C2B29', textAlign: 'center' },
-  dockSubText: { fontSize: 11, fontFamily: 'Georgia-Italic', color: '#999', marginTop: 4 },
-  activeDockText: { color: '#4A6741' },
-  scheduledDockText: { textDecorationLine: 'line-through' },
+  gridList: { flex: 1 },
+  slotRowContainer: { flexDirection: 'row', marginBottom: 0 },
+  timeLabel: { width: 50, fontSize: 12, color: '#999', paddingTop: 8, fontFamily: 'monospace' },
+  slotRow: { flex: 1, height: 60, marginBottom: 2 }, // Increased height for visibility
+  slotBox: { flex: 1, backgroundColor: 'rgba(255,255,255,0.5)', borderRadius: 6, justifyContent: 'center', paddingHorizontal: 10, borderWidth: 1, borderColor: 'rgba(0,0,0,0.03)' }, // Slightly taller and more visible
+  filledSlot: { backgroundColor: '#4A6741', borderColor: '#4A6741' },
+  emptySlot: {},
+  completedSlot: { backgroundColor: '#2C2B29', borderColor: '#2C2B29' },
+  selectedSlot: { borderColor: '#E00', borderWidth: 2 },
+  taskTitleWhite: { color: '#FFF', fontSize: 14, fontWeight: 'bold' },
+  slotDetailsTextWhite: { color: 'rgba(255,255,255,0.8)', fontSize: 10 },
+  completedTaskTitle: { color: '#888', textDecorationLine: 'line-through' },
+  deleteSlotButton: { position: 'absolute', right: 10, top: 15, width: 30, height: 30, backgroundColor: '#FFF', borderRadius: 15, justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 3 },
+  deleteSlotText: { color: '#E00', fontWeight: 'bold' },
 
-  gridList: { flex: 1, marginTop: 10 },
-  slotRowContainer: { flexDirection: 'row', alignItems: 'flex-start' },
-  timeLabel: { width: 55, fontSize: 12, fontFamily: 'Georgia-Italic', color: '#AAA', marginTop: 0, textAlign: 'right', paddingRight: 15, paddingTop: 12 },
-  slotRow: { flex: 1 },
-  slotBox: {
-    minHeight: 46,
-    borderLeftWidth: 1,
-    borderLeftColor: '#EAEAEA',
-    padding: 12,
-    justifyContent: 'center',
-  },
-  emptySlot: { backgroundColor: 'transparent', borderBottomWidth: 1, borderBottomColor: '#F5F5F0', borderStyle: 'solid' },
-  filledSlot: { backgroundColor: '#4A6741', borderRadius: 0, marginVertical: 0, borderBottomWidth: 0 },
-  completedSlot: { backgroundColor: '#9BAFA0' },
-  selectedSlot: { backgroundColor: '#F9F5EC' },
+  finishButton: { backgroundColor: '#4A6741', paddingVertical: 16, borderRadius: 12, alignItems: 'center' },
+  finishButtonText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
 
-  deleteSlotButton: { marginLeft: 10, justifyContent: 'center' },
-  deleteSlotText: { color: '#CCC', fontSize: 18 },
-
-  // --- HOME SCREEN STYLES ---
-  topBar: { paddingHorizontal: 24, paddingVertical: 4, justifyContent: 'space-between', alignItems: 'center', marginTop: 0 },
-  profileCircle: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#E0E0D0', justifyContent: 'center', alignItems: 'center' },
-  profileText: { fontWeight: 'bold', fontSize: 13, color: '#2C2B29' },
-  cardScroll: { marginTop: 10, paddingLeft: 0, marginBottom: 5 },
-  metricCard: { width: 180, height: 120, backgroundColor: '#FFF', borderRadius: 20, padding: 14, marginRight: 12, shadowColor: '#9E9E96', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 3, justifyContent: 'space-between' },
-  flagIcon: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#F5F5F0', justifyContent: 'center', alignItems: 'center' },
-  metricValue: { fontSize: 32, fontFamily: 'Georgia', fontWeight: 'bold', color: '#2C2B29' },
-  metricLabel: { color: '#888', fontSize: 13, fontFamily: 'Georgia-Italic' },
-  sectionTitle: { fontSize: 22, fontWeight: 'bold', color: '#2C2B29', fontFamily: 'Georgia' },
-  seeAll: { color: '#4A6741', fontWeight: 'bold', fontFamily: 'Georgia', fontSize: 14 },
-  sessionRow: { paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: '#F0F0F0', alignItems: 'center' },
-  rowIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#F9F9F5', justifyContent: 'center', alignItems: 'center' },
-  rowTitle: { fontSize: 16, fontFamily: 'Georgia', fontWeight: '600', color: '#2C2B29' },
-  rowSub: { fontSize: 12, fontFamily: 'Georgia-Italic', color: '#999', marginTop: 2 },
-  rowValue: { fontSize: 16, fontFamily: 'Georgia', fontWeight: 'bold', color: '#4A6741' },
-
-  bottomNav: { height: 85, backgroundColor: '#FFF', borderTopWidth: 1, borderTopColor: '#F5F5F0', flexDirection: 'row', justifyContent: 'space-around', alignItems: 'flex-start', paddingTop: 15, paddingHorizontal: 10, position: 'absolute', bottom: 0, left: 0, right: 0 },
-  centerNav: { top: -30 },
-  plusButton: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#4A6741', justifyContent: 'center', alignItems: 'center', shadowColor: '#4A6741', shadowOpacity: 0.4, shadowRadius: 10, elevation: 5 },
-  navText: { fontSize: 10, color: '#999', marginTop: 4, fontFamily: 'Georgia', fontWeight: '500' },
+  // MODAL
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
+  modalContent: { backgroundColor: '#FFF', borderRadius: 20, padding: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 10, elevation: 10 },
+  modalTitle: { fontSize: 24, fontFamily: 'Georgia', fontWeight: 'bold', color: '#2C2B29', marginBottom: 20 },
+  label: { fontSize: 14, fontWeight: 'bold', color: '#666', marginBottom: 8, marginTop: 10 },
+  input: { backgroundColor: '#F5F5F5', borderRadius: 8, padding: 12, fontSize: 16, color: '#2C2B29' },
+  durationContainer: { flexDirection: 'row', flexWrap: 'wrap' },
+  durationOption: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 20, borderWidth: 1, borderColor: '#DDD', marginRight: 8, marginBottom: 8 },
+  selectedDuration: { backgroundColor: '#4A6741', borderColor: '#4A6741' },
+  durationText: { color: '#666' },
+  selectedDurationText: { color: '#FFF', fontWeight: 'bold' },
+  modalButtons: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginTop: 30 },
+  cancelText: { color: '#888', marginRight: 20, fontSize: 16 },
+  saveButton: { backgroundColor: '#2C2B29', paddingVertical: 12, paddingHorizontal: 24, borderRadius: 8 },
+  saveButtonText: { color: '#FFF', fontWeight: 'bold', fontSize: 16 },
 });
