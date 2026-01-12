@@ -34,6 +34,8 @@ interface StoreState {
     language: 'en' | 'he';
     setLanguage: (lang: 'en' | 'he') => void;
     saveSession: () => void;
+    finalizedTimebox: { grid: Record<string, string>; tasks: Task[]; date: string } | null;
+    finalizeTimebox: () => void;
 }
 
 const useStore = create<StoreState>((set) => ({
@@ -176,6 +178,18 @@ const useStore = create<StoreState>((set) => ({
     // Language
     language: 'en',
     setLanguage: (lang) => set({ language: lang }),
+
+    // Finalized Timebox
+    finalizedTimebox: null,
+    finalizeTimebox: () =>
+        set((state) => ({
+            finalizedTimebox: {
+                grid: { ...state.grid },
+                tasks: [...state.tasks],
+                date: new Date().toISOString()
+            },
+            stage: -2 // Navigate to Home
+        })),
 }));
 
 export default useStore;

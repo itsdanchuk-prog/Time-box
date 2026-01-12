@@ -98,6 +98,10 @@ export default function App() {
   const language = useStore((state) => state.language);
   const setLanguage = useStore((state) => state.setLanguage);
 
+  // Finalized Timebox
+  const finalizedTimebox = useStore((state) => state.finalizedTimebox);
+  const finalizeTimebox = useStore((state) => state.finalizeTimebox);
+
   const text = translations[language];
   const isRTL = language === 'he';
   const textAlign = isRTL ? 'right' : 'left';
@@ -181,10 +185,38 @@ export default function App() {
   const handleSlotPress = (time: string) => {
     const existingTaskId = grid[time];
 
-    // DELETE MODE
+    // REMOVE MODE - Task already exists at this slot
     if (existingTaskId) {
-      if (selectedSlot === time) setSelectedSlot(null);
-      else setSelectedSlot(time);
+      const task = tasks.find(t => t.id === existingTaskId);
+      if (!task) return;
+
+      // Find all slots for this task
+      const taskSlots = Object.entries(grid)
+        .filter(([_, id]) => id === existingTaskId)
+        .map(([slot]) => slot);
+
+      // Confirmation for long tasks (> 60 minutes)
+      if (task.duration > 60) {
+        Alert.alert(
+          'Remove Task?',
+          `Remove "${task.title}" from the grid?`,
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Remove',
+              style: 'destructive',
+              onPress: () => {
+                taskSlots.forEach(slot => removeTaskFromGrid(slot));
+                setSelectedSlot(null);
+              }
+            }
+          ]
+        );
+      } else {
+        // Quick remove for short tasks
+        taskSlots.forEach(slot => removeTaskFromGrid(slot));
+        setSelectedSlot(null);
+      }
       return;
     }
 
@@ -284,13 +316,55 @@ export default function App() {
     </TouchableOpacity>
   );
 
+  const ResetGridButton = () => {
+    if (stage !== 2) return null;
+
+    return (
+      <TouchableOpacity
+        style={{
+          position: 'absolute',
+          top: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 10 : 50,
+          left: isRTL ? 70 : undefined,
+          right: isRTL ? undefined : 70,
+          zIndex: 100,
+          backgroundColor: 'rgba(255,255,255,0.8)',
+          borderRadius: 20,
+          padding: 8
+        }}
+        onPress={() => {
+          Alert.alert(
+            "Reset Grid?",
+            "This will clear all tasks from the grid. Tasks will remain in your selection.",
+            [
+              { text: "Cancel", style: "cancel" },
+              {
+                text: "Reset",
+                style: "destructive",
+                onPress: () => {
+                  resetGrid();
+                  setActiveTaskId(null);
+                  setSelectedSlot(null);
+                }
+              }
+            ]
+          );
+        }}
+      >
+        <Ionicons name="refresh-outline" size={24} color="#4A6741" />
+      </TouchableOpacity>
+    );
+  };
+
   const HelpButton = () => {
     let targetStage = 0;
     if (stage === 0) targetStage = 10;
+    else if (stage === 10) targetStage = 0; // Toggle back
     if (stage === 1) targetStage = 11;
+    else if (stage === 11) targetStage = 1; // Toggle back
     if (stage === 2) targetStage = 12;
+    else if (stage === 12) targetStage = 2; // Toggle back
 
-    if (stage < 0 || stage > 2) return null; // Only show on 0, 1, 2
+    if ((stage < 0 || stage > 2) && stage !== 10 && stage !== 11 && stage !== 12) return null; // Show on 0, 1, 2, 10, 11, 12
 
     return (
       <TouchableOpacity
@@ -523,11 +597,25 @@ export default function App() {
             </View>
           </ScrollView>
 
-          {/* CURRENT TIME-BOX STATUS (Calendar Removed) */}
+          {/* CURRENT TIME-BOX STATUS */}
           <View style={{ marginTop: 0 }}>
             <Text style={[styles.sectionTitle, { textAlign: isRTL ? 'right' : 'left', marginBottom: 5, fontSize: 18 }]}>Current Time-Box Status</Text>
 
-            {Object.keys(grid).length === 0 ? (
+            {finalizedTimebox ? (
+              // FINALIZED STATE - Schedule Locked
+              <TouchableOpacity
+                style={[styles.glassCard, { borderColor: '#4A6741', backgroundColor: '#F5F9F5', flexDirection: 'row', alignItems: 'center', padding: 16, marginTop: 5 }]}
+                onPress={() => setStage(-3)}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="eye-outline" size={28} color="#4A6741" style={{ marginRight: 12 }} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontFamily: 'Georgia', fontSize: 18, fontWeight: 'bold', color: '#4A6741', marginBottom: 4 }}>Schedule Locked</Text>
+                  <Text style={{ fontFamily: 'Georgia-Italic', fontSize: 14, color: '#666' }}>View Today's Plan</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#4A6741" />
+              </TouchableOpacity>
+            ) : Object.keys(grid).length === 0 ? (
               // EMPTY STATE
               <View style={[styles.glassCard, { borderColor: '#4A6741', backgroundColor: '#F9FBF9', flexDirection: 'column', alignItems: 'flex-start', padding: 12, marginTop: 5 }]}>
                 <Text style={{ fontFamily: 'Georgia', fontSize: 18, color: '#2C2B29', marginBottom: 8 }}>Your grid is empty.</Text>
@@ -608,6 +696,211 @@ export default function App() {
         </View>
       </>
     );
+  } else if (stage === -3) {
+    // === OVERVIEW PAGE - Read-only zoomed-out view ===
+    if (!finalizedTimebox) {
+      // Fallback if no finalized timebox
+      content = (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+          <Text style={{ fontFamily: 'Georgia', fontSize: 18, color: '#666', textAlign: 'center' }}>
+            No schedule available. Please create a timebox first.
+          </Text>
+          <TouchableOpacity onPress={() => setStage(-2)} style={{ marginTop: 20 }}>
+            <Text style={{ color: '#4A6741', fontWeight: 'bold' }}>Back to Home</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    } else {
+      // Build task blocks from finalized grid
+      const buildTaskBlocks = () => {
+        const taskBlocks: Array<{
+          taskId: string;
+          task: any;
+          startSlot: string;
+          endSlot: string;
+          startIndex: number;
+          slotsCount: number;
+        }> = [];
+
+        let currentBlock: any = null;
+
+        timeSlots.forEach((slot, index) => {
+          const taskId = finalizedTimebox.grid[slot];
+
+          if (taskId) {
+            if (currentBlock && currentBlock.taskId === taskId) {
+              currentBlock.endSlot = slot;
+              currentBlock.slotsCount++;
+            } else {
+              if (currentBlock) {
+                taskBlocks.push(currentBlock);
+              }
+              currentBlock = {
+                taskId,
+                task: finalizedTimebox.tasks.find((t: any) => t.id === taskId),
+                startSlot: slot,
+                endSlot: slot,
+                startIndex: index,
+                slotsCount: 1
+              };
+            }
+          } else {
+            if (currentBlock) {
+              taskBlocks.push(currentBlock);
+              currentBlock = null;
+            }
+          }
+        });
+
+        if (currentBlock) {
+          taskBlocks.push(currentBlock);
+        }
+
+        return taskBlocks;
+      };
+
+      const overviewBlocks = buildTaskBlocks();
+
+      const pastelColors = [
+        { bg: '#A8C5DD', border: '#7A9FBF' },
+        { bg: '#B8D4B8', border: '#8AAA8A' },
+        { bg: '#E6B8B8', border: '#C88A8A' },
+        { bg: '#F5E6B3', border: '#D4C080' },
+      ];
+
+      const slotHeightOverview = 11.25; // 45px per hour / 4 = 11.25px per 15-min slot
+
+      content = (
+        <View style={{ flex: 1 }}>
+          {/* Header with Back Button */}
+          <View style={{
+            paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 10 : 50,
+            paddingHorizontal: 20,
+            paddingBottom: 15,
+            backgroundColor: '#FFFBF5',
+            borderBottomWidth: 1,
+            borderBottomColor: '#E0E0E0'
+          }}>
+            <TouchableOpacity
+              onPress={() => setStage(-2)}
+              style={{ flexDirection: 'row', alignItems: 'center' }}
+            >
+              <Ionicons name="arrow-back" size={24} color="#4A6741" />
+              <Text style={{ fontFamily: 'Georgia', fontSize: 18, fontWeight: 'bold', color: '#4A6741', marginLeft: 8 }}>
+                Back to Dashboard
+              </Text>
+            </TouchableOpacity>
+            <Text style={{ fontFamily: 'Georgia', fontSize: 28, fontWeight: 'bold', color: '#2C2B29', marginTop: 15 }}>
+              Today's Schedule
+            </Text>
+            <Text style={{ fontFamily: 'Georgia-Italic', fontSize: 14, color: '#666', marginTop: 4 }}>
+              Read-only overview
+            </Text>
+          </View>
+
+          {/* Zoomed-out Calendar */}
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={{ paddingBottom: 50 }}
+            showsVerticalScrollIndicator={true}
+          >
+            <View style={{ position: 'relative', paddingHorizontal: 10 }}>
+              {/* Background Grid */}
+              {timeSlots.map((item) => {
+                const [h, m] = item.split(':').map(Number);
+                const isHourStart = m === 0;
+
+                return (
+                  <View
+                    key={item}
+                    style={{
+                      height: slotHeightOverview,
+                      flexDirection: 'row',
+                      alignItems: 'stretch',
+                    }}
+                  >
+                    {/* Canvas */}
+                    <View style={{
+                      flex: 0.85,
+                      backgroundColor: '#FAFBFC',
+                      borderTopWidth: 1,
+                      borderTopColor: isHourStart ? '#CCC' : 'rgba(0,0,0,0.03)',
+                    }} />
+
+                    {/* Time Axis */}
+                    <View style={{
+                      flex: 0.15,
+                      justifyContent: 'flex-start',
+                      alignItems: 'center',
+                      borderTopWidth: 1,
+                      borderTopColor: isHourStart ? '#CCC' : 'rgba(0,0,0,0.03)',
+                      backgroundColor: '#FFFBF5'
+                    }}>
+                      {isHourStart && (
+                        <Text style={{
+                          fontSize: 9,
+                          color: '#666',
+                          transform: [{ translateY: -4 }],
+                          backgroundColor: '#FFFBF5',
+                          paddingHorizontal: 2
+                        }}>
+                          {`${h}:00`}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                );
+              })}
+
+              {/* Task Blocks Overlay */}
+              {overviewBlocks.map((block, blockIndex) => {
+                const colorScheme = pastelColors[blockIndex % pastelColors.length];
+                const topPosition = block.startIndex * slotHeightOverview;
+                const blockHeight = block.slotsCount * slotHeightOverview;
+
+                return (
+                  <View
+                    key={`block-${block.taskId}-${block.startSlot}`}
+                    style={{
+                      position: 'absolute',
+                      top: topPosition,
+                      left: 5,
+                      right: '15%',
+                      height: blockHeight - 2,
+                      backgroundColor: colorScheme.bg,
+                      borderLeftWidth: 2,
+                      borderLeftColor: colorScheme.border,
+                      borderRadius: 2,
+                      marginRight: 5,
+                      marginTop: 1,
+                      padding: 4,
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Text style={{
+                      color: '#2C2B29',
+                      fontSize: 9,
+                      fontWeight: 'bold'
+                    }} numberOfLines={1}>
+                      {block.task?.title || 'Task'}
+                    </Text>
+                    {blockHeight > 15 && (
+                      <Text style={{
+                        color: '#666',
+                        fontSize: 8,
+                        marginTop: 1
+                      }}>
+                        {block.startSlot}
+                      </Text>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          </ScrollView>
+        </View>
+      );
+    }
   } else if (stage === -1) {
     // === INTRO ===
     content = (
@@ -812,7 +1105,7 @@ export default function App() {
       </View>
     );
   } else if (stage === 2) {
-    // === GRID ===
+    // === GRID (FIXED HEIGHT MULTI-COLUMN) ===
     const selectedTasks = tasks.filter(t => t.selected);
 
     const handleFinishDay = () => {
@@ -824,10 +1117,68 @@ export default function App() {
       ]);
     };
 
+    // Helper: Build task blocks from grid
+    const buildTaskBlocks = () => {
+      const taskBlocks: Array<{
+        taskId: string;
+        task: any;
+        startSlot: string;
+        endSlot: string;
+        startIndex: number;
+        slotsCount: number;
+      }> = [];
+
+      let currentBlock: any = null;
+
+      timeSlots.forEach((slot, index) => {
+        const taskId = grid[slot];
+
+        if (taskId) {
+          if (currentBlock && currentBlock.taskId === taskId) {
+            currentBlock.endSlot = slot;
+            currentBlock.slotsCount++;
+          } else {
+            if (currentBlock) {
+              taskBlocks.push(currentBlock);
+            }
+            currentBlock = {
+              taskId,
+              task: tasks.find(t => t.id === taskId),
+              startSlot: slot,
+              endSlot: slot,
+              startIndex: index,
+              slotsCount: 1
+            };
+          }
+        } else {
+          if (currentBlock) {
+            taskBlocks.push(currentBlock);
+            currentBlock = null;
+          }
+        }
+      });
+
+      if (currentBlock) {
+        taskBlocks.push(currentBlock);
+      }
+
+      return taskBlocks;
+    };
+
+    const taskBlocks = buildTaskBlocks();
+
+    // Pastel color palette
+    const pastelColors = [
+      { bg: '#A8C5DD', border: '#7A9FBF' }, // Soft Slate Blue
+      { bg: '#B8D4B8', border: '#8AAA8A' }, // Muted Sage
+      { bg: '#E6B8B8', border: '#C88A8A' }, // Dusty Rose
+      { bg: '#F5E6B3', border: '#D4C080' }, // Pale Gold
+    ];
+
     content = (
       <View style={{ flex: 1 }}>
         <ProgressBar currentStage={2} />
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={[styles.contentContainer, { marginTop: 10, paddingBottom: 150 }]}>
+        <View style={[styles.contentContainer, { marginTop: 0, paddingBottom: 0, flex: 1 }]}>
           <Text style={styles.header}>The Grid</Text>
           <Text style={styles.subHeader}>Give every task a home.</Text>
 
@@ -856,121 +1207,307 @@ export default function App() {
             })}
           </View>
 
-          {/* 15 MIN GRID (MAPPED) */}
-          <View style={styles.gridList}>
-            {timeSlots.map((item, index) => {
-              const taskId = grid[item];
-              const task = taskId ? tasks.find(t => t.id === taskId) : null;
-              const isCompleted = completedSlots.includes(item);
-              const isSelected = selectedSlot === item;
+          {/* CALENDAR GRID */}
+          <ScrollView
+            style={{ width: '100%', flex: 1, marginBottom: 10 }}
+            contentContainerStyle={{ paddingBottom: 100 }}
+            showsVerticalScrollIndicator={true}
+          >
+            <View style={{ position: 'relative' }}>
+              {/* BACKGROUND GRID - 15-minute stripes */}
+              {timeSlots.map((item) => {
+                const [h, m] = item.split(':').map(Number);
+                const isHourStart = m === 0;
+                const slotHeight = 30;
+                const labelText = `${h}:00`;
 
-              const prevTime = timeSlots[index - 1];
-              const nextTime = timeSlots[index + 1];
-              const prevTaskId = prevTime ? grid[prevTime] : null;
-              const nextTaskId = nextTime ? grid[nextTime] : null;
-
-              const isStart = taskId && taskId !== prevTaskId;
-              const isSingle = taskId && taskId !== prevTaskId && taskId !== nextTaskId;
-
-              const mergedStyle: any[] = [];
-              if (taskId) {
-                if (isStart || isSingle) {
-                  mergedStyle.push({ borderTopLeftRadius: 6, borderTopRightRadius: 6, marginTop: 4 });
-                }
-                const isEnd = taskId && taskId !== nextTaskId;
-                if (isEnd) {
-                  mergedStyle.push({ borderBottomLeftRadius: 6, borderBottomRightRadius: 6, marginBottom: 4 });
-                }
-              }
-
-              const containerStyle: any[] = [];
-              containerStyle.push({ marginBottom: 0 });
-
-              const showContent = isStart || isSingle;
-
-              return (
-                <View key={item} style={[styles.slotRowContainer, containerStyle]}>
-                  <Text style={styles.timeLabel}>{item}</Text>
+                return (
                   <TouchableOpacity
-                    style={styles.slotRow}
+                    key={item}
+                    style={{
+                      height: slotHeight,
+                      flexDirection: 'row',
+                      alignItems: 'stretch',
+                    }}
                     onPress={() => handleSlotPress(item)}
-                    onLongPress={() => taskId && toggleSlotCompletion(item)}
-                    delayLongPress={300}
-                    activeOpacity={0.9}
+                    activeOpacity={0.8}
                   >
-                    <View style={[
-                      styles.slotBox,
-                      task ? styles.filledSlot : styles.emptySlot,
-                      isCompleted && styles.completedSlot,
-                      isSelected && styles.selectedSlot,
-                      ...mergedStyle
-                    ]}>
-                      {task ? (
-                        <View>
-                          {showContent && (
-                            <View>
-                              <Text style={[
-                                isCompleted ? styles.completedTaskTitle : styles.taskTitleWhite,
-                                { fontSize: 14, fontFamily: 'Georgia', fontWeight: 'bold', letterSpacing: 0.5 }
-                              ]}>
-                                {task.title}
-                              </Text>
-                              {(task.description || task.location) && (
-                                <Text style={styles.slotDetailsTextWhite} numberOfLines={1}>
-                                  {task.location ? `${task.location} ` : ''}
-                                  {task.description ? `— ${task.description}` : ''}
-                                </Text>
-                              )}
-                            </View>
-                          )}
-                        </View>
-                      ) : (
-                        <View />
+                    {/* LEFT: CANVAS (85%) */}
+                    <View style={{
+                      flex: 0.85,
+                      backgroundColor: '#FAFBFC',
+                      borderTopWidth: 1,
+                      borderTopColor: isHourStart ? '#CCC' : '#E8E8E8',
+                    }} />
+
+                    {/* RIGHT: TIME AXIS (15%) */}
+                    <View style={{
+                      flex: 0.15,
+                      justifyContent: 'flex-start',
+                      alignItems: 'center',
+                      borderTopWidth: 1,
+                      borderTopColor: isHourStart ? '#CCC' : '#E8E8E8',
+                      backgroundColor: '#FFFBF5'
+                    }}>
+                      {isHourStart && (
+                        <Text style={{
+                          fontSize: 11,
+                          color: '#666',
+                          transform: [{ translateY: -6 }],
+                          backgroundColor: '#FFFBF5',
+                          paddingHorizontal: 4
+                        }}>
+                          {labelText}
+                        </Text>
                       )}
                     </View>
                   </TouchableOpacity>
+                );
+              })}
 
-                  {isSelected && task && (
-                    <TouchableOpacity style={styles.deleteSlotButton} onPress={() => {
-                      removeTaskInstance(taskId);
-                      setSelectedSlot(null);
+              {/* SOLID TASK BLOCKS OVERLAY */}
+              {taskBlocks.map((block, blockIndex) => {
+                const colorScheme = pastelColors[blockIndex % pastelColors.length];
+                const topPosition = block.startIndex * 30;
+                const blockHeight = block.slotsCount * 30;
+                const isCompleted = completedSlots.includes(block.startSlot);
+                const isSelected = selectedSlot === block.startSlot;
+
+                return (
+                  <TouchableOpacity
+                    key={`block-${block.taskId}-${block.startSlot}`}
+                    style={{
+                      position: 'absolute',
+                      top: topPosition,
+                      left: 10,
+                      right: '15%',
+                      height: blockHeight - 4,
+                      backgroundColor: isCompleted ? '#2C2B29' : colorScheme.bg,
+                      borderLeftWidth: 3,
+                      borderLeftColor: isCompleted ? '#000' : colorScheme.border,
+                      borderRadius: 4,
+                      marginRight: 10,
+                      marginTop: 2,
+                      padding: 8,
+                      justifyContent: 'center',
+                      zIndex: 50,
+                      borderWidth: isSelected ? 2 : 0,
+                      borderColor: '#E00'
+                    }}
+                    onPress={() => handleSlotPress(block.startSlot)}
+                    onLongPress={() => toggleSlotCompletion(block.startSlot)}
+                    delayLongPress={300}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={{
+                      color: isCompleted ? '#FFF' : '#2C2B29',
+                      fontSize: 13,
+                      fontWeight: 'bold'
+                    }} numberOfLines={2}>
+                      {block.task?.title || 'Task'}
+                    </Text>
+                    <Text style={{
+                      color: isCompleted ? '#DDD' : '#666',
+                      fontSize: 11,
+                      marginTop: 2
                     }}>
-                      <Text style={styles.deleteSlotText}>✕</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              );
-            })}
-          </View>
+                      {block.startSlot} - {block.endSlot}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
 
-          <View style={styles.footer}>
-            <TouchableOpacity style={styles.finishButton} onPress={handleFinishDay} activeOpacity={0.8}>
-              <Text style={styles.finishButtonText}>Finish Day</Text>
+              {/* CURRENT TIME INDICATOR - Top layer */}
+              <View style={{
+                position: 'absolute',
+                top: (currentH * 120) + (currentM * 2),
+                left: 0,
+                right: 0,
+                zIndex: 100,
+                flexDirection: 'row',
+                alignItems: 'center'
+              }}>
+                <View style={{ flex: 1, height: 2, backgroundColor: '#005BBB' }} />
+                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#005BBB', marginLeft: -4 }} />
+              </View>
+            </View>
+          </ScrollView>
+
+          <View style={[styles.footer, { paddingBottom: 20 }]}>
+            <TouchableOpacity
+              style={[styles.finishButton, { backgroundColor: '#4A6741' }]}
+              onPress={finalizeTimebox}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.finishButtonText}>Finish Day & Lock Schedule</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.secondaryButton} onPress={() => setStage(1)}>
               <Text style={styles.secondaryButtonText}>Modify Plan</Text>
             </TouchableOpacity>
           </View>
-        </ScrollView>
+        </View>
       </View>
     );
-  } else if (stage === 10 || stage === 11 || stage === 12) {
-    // === HELP STAGES ===
-    let helpTitle = "";
-    let returnStage = 0;
-
-    if (stage === 10) { helpTitle = "Collection Help"; returnStage = 0; }
-    if (stage === 11) { helpTitle = "Selection Help"; returnStage = 1; }
-    if (stage === 12) { helpTitle = "Grid Help"; returnStage = 2; }
-
+  } else if (stage === 10) {
+    // === STAGE 1 (COLLECTION) HELP ===
     content = (
-      <>
-        <BackButton targetStage={returnStage} />
-        <View style={[styles.contentContainer, { marginTop: 40, alignItems: 'center', justifyContent: 'center', flex: 1 }]}>
-          <Text style={{ fontFamily: 'Georgia', fontSize: 24, fontWeight: 'bold', color: '#2C2B29', marginBottom: 20 }}>{helpTitle}</Text>
+      <View style={{ flex: 1 }}>
+        <ProgressBar currentStage={0} />
+        <View style={[styles.contentContainer, { marginTop: 0 }]}>
+          <Text style={styles.header}>The Collection</Text>
+
+          <ScrollView style={{ marginTop: 10, paddingRight: 10 }}>
+            {/* 1. The Goal */}
+            <Text style={styles.helpHeader}>The Goal</Text>
+            <Text style={styles.helpText}>
+              Clear your mind by gathering every task, idea, and commitment in one place. This is your space to capture everything—big or small—without worrying about order or timing.
+            </Text>
+
+            {/* 2. The Process */}
+            <Text style={styles.helpHeader}>The Process</Text>
+
+            <View style={styles.bulletItem}>
+              <Text style={styles.bulletTitle}>Dump Everything:</Text>
+              <Text style={styles.helpText}>Use the 'Add' button to list every item currently taking up mental space.</Text>
+            </View>
+
+            <View style={styles.bulletItem}>
+              <Text style={styles.bulletTitle}>Don't Filter:</Text>
+              <Text style={styles.helpText}>Don't worry about when or how yet. If it’s a thought, it belongs here.</Text>
+            </View>
+
+            <View style={styles.bulletItem}>
+              <Text style={styles.bulletTitle}>Keep it Simple:</Text>
+              <Text style={styles.helpText}>Short phrases work best. You can refine the details in the later stages.</Text>
+            </View>
+
+            <View style={styles.bulletItem}>
+              <Text style={styles.bulletTitle}>The Next Step:</Text>
+              <Text style={styles.helpText}>Once your mind feels 'empty' and the list feels complete, tap the Collection arrow in the progress bar to move to the Selection stage.</Text>
+            </View>
+
+            {/* 3. The Purpose */}
+            <View style={styles.purposeBox}>
+              <Text style={[styles.helpHeader, { marginTop: 0 }]}>The Purpose</Text>
+              <Text style={styles.purposeText}>
+                By externalizing your thoughts now, you stop the 'mental loop' of trying to remember them. Transitioning from a cluttered mind to a structured list creates the immediate focus needed for the deep planning that follows.
+              </Text>
+            </View>
+
+            <View style={{ height: 100 }} />
+          </ScrollView>
+
+          <BackButton targetStage={0} />
         </View>
-      </>
+      </View>
+    );
+
+  } else if (stage === 11) {
+    // === STAGE 1 (PRIORITY/SELECTION) HELP ===
+    content = (
+      <View style={{ flex: 1 }}>
+        <ProgressBar currentStage={1} />
+        <View style={[styles.contentContainer, { marginTop: 0 }]}>
+          <Text style={styles.header}>The Priority</Text>
+
+          <ScrollView style={{ marginTop: 10, paddingRight: 10 }}>
+            {/* The Goal */}
+            <Text style={styles.helpHeader}>The Goal</Text>
+            <Text style={styles.helpText}>
+              Narrow your focus to what truly matters. By separating the 'Must be done' from the 'Should be done,' you protect your energy and ensure your time is spent on your highest-value activities.
+            </Text>
+
+            {/* The Process */}
+            <Text style={styles.helpHeader}>The Process</Text>
+
+            <View style={styles.bulletItem}>
+              <Text style={styles.bulletTitle}>Evaluate the List:</Text>
+              <Text style={styles.helpText}>Review the items you gathered in the Collection stage.</Text>
+            </View>
+
+            <View style={styles.bulletItem}>
+              <Text style={styles.bulletTitle}>Make the Cut:</Text>
+              <Text style={styles.helpText}>Select only the tasks that align with your objectives for today. Be ruthless—if it isn't essential, leave it for another time.</Text>
+            </View>
+
+            <View style={styles.bulletItem}>
+              <Text style={styles.bulletTitle}>Rank Importance:</Text>
+              <Text style={styles.helpText}>Identify your 'Non-Negotiables'—the 1 to 3 items that would make the day a success regardless of what else happens.</Text>
+            </View>
+
+            <View style={styles.bulletItem}>
+              <Text style={styles.bulletTitle}>The Next Step:</Text>
+              <Text style={styles.helpText}>Once you have a curated selection of priorities, tap the Priority arrow in the progress bar to begin mapping them onto the Grid.</Text>
+            </View>
+
+            {/* The Purpose */}
+            <View style={styles.purposeBox}>
+              <Text style={[styles.helpHeader, { marginTop: 0 }]}>The Purpose</Text>
+              <Text style={styles.purposeText}>
+                The power of choice is your greatest tool against overwhelm. By deliberately choosing what not to do, you eliminate the guilt of unfinished tasks. This stage ensures that when you move to the Grid, you aren't just filling time—you are investing it in your priorities.
+              </Text>
+            </View>
+
+            <View style={{ height: 100 }} />
+          </ScrollView>
+
+          <BackButton targetStage={1} />
+        </View>
+      </View>
+    );
+  } else if (stage === 12) {
+    // === STAGE 2 (GRID) HELP ===
+    content = (
+      <View style={{ flex: 1 }}>
+        <ProgressBar currentStage={2} />
+        <View style={[styles.contentContainer, { marginTop: 0 }]}>
+          <Text style={styles.header}>The Grid</Text>
+
+          <ScrollView style={{ marginTop: 10, paddingRight: 10 }}>
+            {/* The Goal */}
+            <Text style={styles.helpHeader}>The Goal</Text>
+            <Text style={styles.helpText}>
+              To bridge the gap between 'having a list' and 'having a plan.' This is where you claim specific territory in your day for the priorities you’ve chosen, turning abstract intentions into a visual reality.
+            </Text>
+
+            {/* The Process */}
+            <Text style={styles.helpHeader}>The Process</Text>
+
+            <View style={styles.bulletItem}>
+              <Text style={styles.bulletTitle}>Secure the Blocks:</Text>
+              <Text style={styles.helpText}>Assign your tasks to specific 15-minute slots. By defining a start and end time, you create a boundary that protects your focus.</Text>
+            </View>
+
+            <View style={styles.bulletItem}>
+              <Text style={styles.bulletTitle}>Respect the Transitions:</Text>
+              <Text style={styles.helpText}>Don't just book tasks back-to-back. Use the micro-grid to account for the 'in-between' moments—travel, setup, or a mental reset.</Text>
+            </View>
+
+            <View style={styles.bulletItem}>
+              <Text style={styles.bulletTitle}>Visualize the Load:</Text>
+              <Text style={styles.helpText}>Use the multi-column view to spot 'traffic jams' in your day. If a column looks too dense, move a block to a lighter time period.</Text>
+            </View>
+
+            <View style={styles.bulletItem}>
+              <Text style={styles.bulletTitle}>The Next Step:</Text>
+              <Text style={styles.helpText}>Once every priority has a home and your timeline feels balanced, tap the Grid chevron to move into the final stage of Refinement.</Text>
+            </View>
+
+            {/* The Purpose */}
+            <View style={styles.purposeBox}>
+              <Text style={[styles.helpHeader, { marginTop: 0 }]}>The Purpose</Text>
+              <Text style={styles.purposeText}>
+                A list tells you what to do; the Grid tells you when you will actually do it. Mapping your day in high-resolution 15-minute increments eliminates the 'decision fatigue' of wondering what comes next. You are no longer reacting to your day—you are navigating it with a precision-engineered map.
+              </Text>
+            </View>
+
+            <View style={{ height: 100 }} />
+          </ScrollView>
+
+          <BackButton targetStage={2} />
+        </View>
+      </View>
     );
   }
 
@@ -978,7 +1515,8 @@ export default function App() {
     <SafeAreaView style={styles.container}>
       <Atmosphere />
       {/* Show HomeButton on stages that need it (-1, 0, 1, 2, 3) */}
-      {(stage === -1 || stage === 0 || stage === 1 || stage === 2 || stage === 3) && <HomeButton />}
+      {(stage === -1 || stage === 0 || stage === 1 || stage === 2 || stage === 3 || stage === 10 || stage === 11 || stage === 12) && <HomeButton />}
+      <ResetGridButton />
       <HelpButton />
       <StatusBar barStyle="dark-content" />
       {content}
@@ -1110,4 +1648,12 @@ const styles = StyleSheet.create({
   cancelText: { color: '#888', marginRight: 20, fontSize: 16 },
   saveButton: { backgroundColor: '#2C2B29', paddingVertical: 12, paddingHorizontal: 24, borderRadius: 8 },
   saveButtonText: { color: '#FFF', fontWeight: 'bold', fontSize: 16 },
+  // HELP STYLES
+  helpHeader: { fontSize: 22, fontFamily: 'Georgia', fontWeight: 'bold', color: '#2C2B29', marginTop: 25, marginBottom: 10 },
+  helpText: { fontSize: 16, fontFamily: 'Georgia', color: '#444', lineHeight: 24 },
+  bulletItem: { marginBottom: 15, paddingLeft: 10 },
+  bulletTitle: { fontSize: 16, fontFamily: 'Georgia', fontWeight: 'bold', color: '#4A6741', marginBottom: 4 },
+  bulletText: { fontSize: 16, fontFamily: 'Georgia', color: '#444', lineHeight: 24 },
+  purposeBox: { backgroundColor: 'rgba(74, 103, 65, 0.08)', padding: 20, borderRadius: 16, marginTop: 30, borderWidth: 1, borderColor: 'rgba(74, 103, 65, 0.1)' },
+  purposeText: { fontSize: 16, fontFamily: 'Georgia-Italic', color: '#2C2B29', lineHeight: 26 },
 });
