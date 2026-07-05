@@ -1,0 +1,771 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>מסלול גאורגיה · 1–9 באוקטובר</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;900&family=Heebo:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#241711;
+    --paper:#F1E4C9;
+    --card:#FFFBF2;
+    --wine:#6E1E3A;
+    --wine-dark:#3F1023;
+    --alpine:#1E5C50;
+    --alpine-dark:#123B33;
+    --gold:#B7862E;
+    --gold-soft:#E9D08A;
+    --line:#DCC79A;
+    --muted:#8A7860;
+    --sky:#2C6E8F;
+    --plum:#5B3A66;
+    --shadow:0 6px 18px rgba(36,23,17,0.10);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;}
+  body{
+    background:var(--paper);
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(110,30,58,0.05), transparent 40%),
+      radial-gradient(circle at 85% 60%, rgba(30,92,80,0.06), transparent 45%);
+    color:var(--ink);
+    font-family:'Heebo', -apple-system, 'Segoe UI', Arial, sans-serif;
+    direction:rtl;
+    overflow-x:hidden;
+  }
+
+  /* ============ TOP TOOLBAR ============ */
+  .toolbar{
+    position:sticky; top:0; z-index:60;
+    display:flex; align-items:center; gap:8px;
+    padding:10px 12px;
+    background:rgba(241,228,201,0.82);
+    backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .tb-title{
+    font-family:'Frank Ruhl Libre',serif; font-weight:900; font-size:16px;
+    margin-inline-end:auto; display:flex; align-items:center; gap:7px;
+    white-space:nowrap;
+  }
+  .tb-title .pin{color:var(--wine);}
+  .tb-btn{
+    display:inline-flex; align-items:center; gap:6px;
+    border:1px solid var(--line); background:var(--card);
+    color:var(--ink); font-family:'Heebo'; font-weight:700; font-size:12.5px;
+    padding:8px 12px; border-radius:11px; cursor:pointer;
+    box-shadow:0 2px 6px rgba(36,23,17,0.08);
+    transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .tb-btn:active{transform:translateY(1px) scale(.98);}
+  .tb-btn.bank{background:linear-gradient(120deg,var(--alpine),var(--alpine-dark));color:#F4EEDD;border-color:transparent;}
+  .tb-btn.details{background:linear-gradient(120deg,var(--wine),var(--wine-dark));color:#F6EEDD;border-color:transparent;}
+
+  .page{max-width:720px;margin:0 auto;padding:16px 14px 90px;}
+
+  /* ============ HERO ============ */
+  .hero{
+    position:relative;
+    background:linear-gradient(150deg, var(--wine) 0%, var(--wine-dark) 65%);
+    color:#F6EEDD; border-radius:22px;
+    padding:26px 22px 22px; text-align:center; overflow:hidden;
+    box-shadow:0 10px 30px rgba(63,16,35,0.35);
+  }
+  .hero::before{
+    content:""; position:absolute; inset:0;
+    background-image:repeating-linear-gradient(45deg, rgba(255,255,255,0.035) 0 2px, transparent 2px 14px);
+    pointer-events:none;
+  }
+  .hero .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:2px;color:var(--gold);margin-bottom:9px;}
+  .hero h1{font-family:'Frank Ruhl Libre',serif;font-weight:900;font-size:31px;margin:0 0 6px;}
+  .hero .route{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#E7D9B8;margin-bottom:18px;letter-spacing:.5px;}
+  .hero-stats{display:flex;justify-content:center;border-top:1px dashed rgba(246,238,221,0.3);padding-top:14px;}
+  .hero-stats .stat{flex:1;position:relative;}
+  .hero-stats .stat:not(:last-child)::after{content:"";position:absolute;top:2px;bottom:2px;left:0;border-left:1px dashed rgba(246,238,221,0.25);}
+  .hero-stats .num{display:block;font-family:'Frank Ruhl Libre',serif;font-weight:700;font-size:21px;color:#fff;}
+  .hero-stats .label{font-size:10.5px;color:#D9C7A3;margin-top:2px;}
+
+  /* ============ DAY NAV ============ */
+  .day-nav{display:flex;gap:6px;overflow-x:auto;margin:16px 0 14px;padding-bottom:4px;scrollbar-width:none;}
+  .day-nav::-webkit-scrollbar{display:none;}
+  .day-nav a{
+    flex:0 0 auto;text-decoration:none;color:var(--ink);
+    background:var(--card);border:1px solid var(--line);border-radius:10px;
+    padding:6px 12px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;
+  }
+  .day-nav a span{display:block;font-family:'Heebo',sans-serif;font-weight:400;font-size:9px;color:var(--muted);margin-top:1px;}
+
+  /* ============ DAY CARD = TICKET ============ */
+  .day-card{
+    background:var(--card);border-radius:16px;margin-bottom:20px;
+    box-shadow:var(--shadow);position:relative;scroll-margin-top:64px;overflow:hidden;
+    transition:box-shadow .18s ease, transform .18s ease;
+  }
+  .day-card.drop-target{box-shadow:0 0 0 3px var(--gold), 0 12px 26px rgba(183,134,46,0.35);transform:translateY(-2px);}
+  .stub{display:flex;align-items:center;gap:14px;padding:15px 20px;color:#fff;}
+  .stub .daynum{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:22px;background:rgba(255,255,255,0.18);border-radius:8px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .stub .info{flex:1;}
+  .stub .info h2{margin:0;font-family:'Frank Ruhl Libre',serif;font-size:17px;font-weight:700;}
+  .stub .route-code{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;opacity:.9;margin-top:2px;}
+  .stub .plane{font-size:18px;opacity:.85;}
+  [data-city="tbilisi"] .stub{background:linear-gradient(120deg,var(--wine),var(--wine-dark));}
+  [data-city="kazbegi"] .stub{background:linear-gradient(120deg,var(--alpine),var(--alpine-dark));}
+  [data-city="transit-tk"] .stub{background:linear-gradient(110deg,var(--wine),var(--alpine));}
+  [data-city="transit-kt"] .stub{background:linear-gradient(110deg,var(--alpine),var(--wine));}
+
+  .perforation{position:relative;border-top:2px dashed var(--line);margin:0 18px;}
+  .perforation::before,.perforation::after{content:"";position:absolute;top:-9px;width:18px;height:18px;border-radius:50%;background:var(--paper);box-shadow:inset 0 1px 3px rgba(36,23,17,0.15);}
+  .perforation::before{left:-27px;}
+  .perforation::after{right:-27px;}
+
+  .timeline{list-style:none;margin:0;padding:8px 18px 6px;}
+  .event{display:flex;gap:12px;align-items:flex-start;padding:11px 0;border-bottom:1px solid #EFE6D2;}
+  .event:last-child{border-bottom:none;}
+  .event .time{flex:0 0 50px;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:13px;color:var(--ink);text-align:center;padding-top:2px;}
+  .event .icon{font-size:16px;flex:0 0 22px;text-align:center;}
+  .event-body{flex:1;}
+  .event-phase{font-size:11.5px;font-weight:600;color:var(--muted);margin-bottom:1px;}
+  .event-desc{font-size:14px;line-height:1.5;}
+  .event--special{background:linear-gradient(120deg,#FBF1D8,#FFFDF5);border:1px solid var(--gold-soft);border-radius:10px;margin:8px 0;padding:10px 12px;position:relative;}
+  .event--special .event-phase{color:var(--gold);}
+  .event--special .stamp{position:absolute;top:-10px;left:10px;background:var(--gold);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;transform:rotate(-4deg);box-shadow:0 3px 8px rgba(183,134,46,0.4);}
+
+  /* ============ DROP ZONE (picks) ============ */
+  .picks{margin:2px 18px 16px;border-top:1px dashed var(--line);padding-top:10px;}
+  .picks-label{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.4px;margin-bottom:8px;display:flex;align-items:center;gap:5px;}
+  .picks-list{display:flex;flex-wrap:wrap;gap:7px;min-height:20px;}
+  .picks-list:empty{border:1.5px dashed var(--line);border-radius:10px;padding:12px;justify-content:center;background:rgba(220,199,154,0.08);}
+  .picks-list:empty::before{content:attr(data-hint);font-size:12px;color:var(--muted);opacity:.85;}
+  .day-card.drop-target .picks-list:empty{border-color:var(--gold);background:rgba(183,134,46,0.1);}
+  .pick{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:6px 9px 6px 7px;border-radius:20px;font-size:12.5px;font-weight:600;
+    color:#fff;box-shadow:0 2px 6px rgba(36,23,17,0.15);
+    animation:pop .22s cubic-bezier(.2,1.4,.5,1);max-width:100%;
+  }
+  @keyframes pop{from{transform:scale(.6);opacity:0;}to{transform:scale(1);opacity:1;}}
+  .pick .p-ic{font-size:13px;}
+  .pick .p-t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;}
+  .pick .p-x{border:none;background:rgba(255,255,255,0.22);color:#fff;width:17px;height:17px;border-radius:50%;font-size:12px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;}
+  .pick .p-x:active{background:rgba(0,0,0,0.25);}
+  .cat-attr-tbilisi,.cat-road,.cat-attr-kazbegi{background:linear-gradient(120deg,var(--alpine),var(--alpine-dark));}
+  .cat-food-tbilisi,.cat-food-kazbegi{background:linear-gradient(120deg,var(--wine),var(--wine-dark));}
+  .cat-bars{background:linear-gradient(120deg,#8A6410,var(--gold));}
+  .cat-clubs{background:linear-gradient(120deg,var(--plum),#2E1C36);}
+
+  .footer{text-align:center;font-size:12px;color:var(--muted);padding-top:8px;font-family:'IBM Plex Mono',monospace;}
+
+  /* ============ DRAWERS ============ */
+  .backdrop{position:fixed;inset:0;background:rgba(36,23,17,0.45);backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:opacity .25s ease;z-index:70;}
+  .backdrop.show{opacity:1;pointer-events:auto;}
+  .drawer{position:fixed;top:0;height:100dvh;width:min(88vw,360px);z-index:80;display:flex;flex-direction:column;background:var(--card);box-shadow:0 0 40px rgba(36,23,17,0.3);transition:transform .3s cubic-bezier(.3,.8,.3,1);}
+  .drawer.bank{left:0;border-right:1px solid var(--line);transform:translateX(-102%);}
+  .drawer.details{right:0;border-left:1px solid var(--line);transform:translateX(102%);}
+  .drawer.open{transform:translateX(0);}
+  .drawer-head{display:flex;align-items:center;gap:9px;padding:16px 16px 12px;color:#fff;}
+  .bank .drawer-head{background:linear-gradient(120deg,var(--alpine),var(--alpine-dark));}
+  .details .drawer-head{background:linear-gradient(120deg,var(--wine),var(--wine-dark));}
+  .drawer-head h3{margin:0;font-family:'Frank Ruhl Libre',serif;font-size:18px;font-weight:900;flex:1;}
+  .drawer-head .sub{display:block;font-family:'Heebo';font-weight:400;font-size:11px;opacity:.85;margin-top:2px;}
+  .drawer-close{border:none;background:rgba(255,255,255,0.18);color:#fff;width:32px;height:32px;border-radius:10px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .drawer-close:active{background:rgba(0,0,0,0.2);}
+
+  /* bank categories */
+  .cats{display:flex;flex-wrap:wrap;gap:7px;padding:12px 14px;border-bottom:1px solid var(--line);}
+  .cat-pill{border:1px solid var(--line);background:var(--paper);color:var(--ink);font-family:'Heebo';font-weight:700;font-size:12px;padding:7px 11px;border-radius:20px;cursor:pointer;transition:all .14s ease;display:inline-flex;align-items:center;gap:5px;}
+  .cat-pill:active{transform:scale(.96);}
+  .cat-pill.active{background:linear-gradient(120deg,var(--alpine),var(--alpine-dark));color:#fff;border-color:transparent;box-shadow:0 3px 8px rgba(30,92,80,0.3);}
+  .bank-hint{font-size:11px;color:var(--muted);padding:9px 16px 2px;display:flex;align-items:center;gap:6px;}
+  .items{flex:1;overflow-y:auto;padding:8px 14px 24px;-webkit-overflow-scrolling:touch;}
+  .item{
+    display:flex;align-items:flex-start;gap:10px;background:var(--paper);
+    border:1px solid var(--line);border-radius:13px;padding:11px 12px;margin-bottom:8px;
+    cursor:grab;position:relative;user-select:none;-webkit-user-select:none;
+    transition:transform .1s ease, box-shadow .1s ease, opacity .15s ease;
+    touch-action:pan-y;
+  }
+  .item:active{box-shadow:0 4px 12px rgba(36,23,17,0.15);}
+  .item.pressing{transform:scale(1.04);box-shadow:0 8px 20px rgba(36,23,17,0.25);background:#fff;border-color:var(--gold);}
+  .item.lifted{opacity:.35;}
+  .item .i-ic{font-size:20px;flex-shrink:0;line-height:1.2;}
+  .item .i-main{flex:1;min-width:0;}
+  .item .i-t{font-weight:700;font-size:13.5px;line-height:1.3;}
+  .item .i-n{font-size:11.5px;color:var(--muted);line-height:1.4;margin-top:2px;}
+  .item .i-grip{color:var(--line);font-size:15px;align-self:center;}
+
+  /* drag ghost */
+  .ghost{position:fixed;top:0;left:0;z-index:200;pointer-events:none;transform:translate(-50%,-50%);}
+  .ghost .pick{box-shadow:0 12px 26px rgba(36,23,17,0.4);transform:scale(1.08);}
+
+  /* details content */
+  .details .body{flex:1;overflow-y:auto;padding:14px 14px 30px;-webkit-overflow-scrolling:touch;}
+  .d-card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:13px 14px;margin-bottom:12px;}
+  .d-card h4{margin:0 0 10px;font-family:'Frank Ruhl Libre',serif;font-size:15px;font-weight:700;display:flex;align-items:center;gap:7px;color:var(--wine-dark);}
+  .kv{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px dashed var(--line);font-size:13px;}
+  .kv:last-child{border-bottom:none;}
+  .kv .k{color:var(--muted);}
+  .kv .v{font-weight:700;font-family:'IBM Plex Mono',monospace;text-align:left;white-space:nowrap;}
+  .kv .k small{display:block;font-size:10.5px;color:var(--muted);font-weight:400;opacity:.85;}
+  .d-total{background:linear-gradient(120deg,var(--wine),var(--wine-dark));color:#fff;border:none;}
+  .d-total h4{color:#fff;}
+  .d-total .kv{border-bottom-color:rgba(255,255,255,0.2);}
+  .d-total .kv .k{color:#E7D9B8;}
+  .d-big{font-family:'Frank Ruhl Libre',serif;font-size:26px;font-weight:900;text-align:center;padding:6px 0 2px;}
+  .d-big small{display:block;font-family:'Heebo';font-size:11px;font-weight:400;opacity:.85;letter-spacing:.5px;}
+  .stay{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line);font-size:12.5px;}
+  .stay:last-child{border-bottom:none;}
+  .stay .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+  .stay .s-body{flex:1;}
+  .stay .s-t{font-weight:700;}
+  .stay .s-n{color:var(--muted);font-size:11px;}
+  .stay .s-date{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--wine);white-space:nowrap;}
+  .reset-btn{width:100%;border:1px solid var(--line);background:var(--card);color:var(--wine);font-family:'Heebo';font-weight:700;font-size:13px;padding:11px;border-radius:12px;cursor:pointer;margin-top:4px;}
+  .reset-btn:active{background:#F6EDDA;}
+  .note-line{font-size:12px;color:var(--muted);line-height:1.6;padding:3px 0;display:flex;gap:7px;}
+
+  /* toast */
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#F6EEDD;padding:10px 18px;border-radius:22px;font-size:13px;font-weight:600;z-index:120;opacity:0;pointer-events:none;transition:all .25s ease;box-shadow:0 8px 22px rgba(0,0,0,0.3);}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  /* ============ DESKTOP: pin bank ============ */
+  @media(min-width:1180px){
+    body{padding-left:372px;}
+    .drawer.bank{transform:translateX(0);box-shadow:2px 0 20px rgba(36,23,17,0.08);}
+    .toolbar .tb-btn.bank{display:none;}
+    .backdrop.bank-only{display:none;}
+  }
+
+  @media print{
+    .toolbar,.day-nav,.drawer,.backdrop,.toast,.picks-list:empty{display:none!important;}
+    body{background:#fff;padding:0;}
+    .day-card{box-shadow:none;border:1px solid #ddd;break-inside:avoid;}
+    .hero,.stub{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= TOOLBAR ================= -->
+<div class="toolbar">
+  <div class="tb-title"><span class="pin">📍</span> גאורגיה · אוקטובר</div>
+  <button class="tb-btn bank" id="openBank">🎒 בנק אופציות</button>
+  <button class="tb-btn details" id="openDetails">📋 פרטים</button>
+</div>
+
+<div class="page">
+
+  <div class="hero">
+    <div class="eyebrow">B O A R D I N G · G E O R G I A</div>
+    <h1>מסלול גאורגיה</h1>
+    <div class="route">✈ TBS · 01.10 — 09.10 · טביליסי → קזבגי → טביליסי</div>
+    <div class="hero-stats">
+      <div class="stat"><span class="num">9</span><span class="label">ימים</span></div>
+      <div class="stat"><span class="num">3</span><span class="label">לילות בקזבגי</span></div>
+      <div class="stat"><span class="num">♠2</span><span class="label">טורנירי פוקר</span></div>
+    </div>
+  </div>
+
+  <nav class="day-nav">
+    <a href="#day1">01<span>חמישי</span></a>
+    <a href="#day2">02<span>שישי</span></a>
+    <a href="#day3">03<span>שבת</span></a>
+    <a href="#day4">04<span>ראשון</span></a>
+    <a href="#day5">05<span>שני</span></a>
+    <a href="#day6">06<span>שלישי</span></a>
+    <a href="#day7">07<span>רביעי</span></a>
+    <a href="#day8">08<span>חמישי</span></a>
+    <a href="#day9">09<span>שישי</span></a>
+  </nav>
+
+  <main id="days">
+
+    <!-- DAY 1 -->
+    <section class="day-card" id="day1" data-city="tbilisi">
+      <div class="stub"><div class="daynum">01</div><div class="info"><h2>יום חמישי · 01.10</h2><div class="route-code">📍 טביליסי · הגעה</div></div><div class="plane">🛬</div></div>
+      <div class="perforation"></div>
+      <ul class="timeline">
+        <li class="event"><div class="time">21:45</div><div class="icon">✈️</div><div class="event-body"><div class="event-phase">ערב / לילה</div><div class="event-desc">נחיתה (TBS), איסוף (Bolt / נהג מקומי)</div></div></li>
+        <li class="event"><div class="time">23:00</div><div class="icon">🌙</div><div class="event-body"><div class="event-phase">לילה</div><div class="event-desc">צ'ק-אין (Mukhrantubani), היכרות, דרינק (שרדן)</div></div></li>
+      </ul>
+      <div class="picks"><div class="picks-label">✦ הבחירות שלך</div><div class="picks-list" data-day="day1" data-hint="גרור לכאן אטרקציות · מסעדות · ברים"></div></div>
+    </section>
+
+    <!-- DAY 2 -->
+    <section class="day-card" id="day2" data-city="tbilisi">
+      <div class="stub"><div class="daynum">02</div><div class="info"><h2>יום שישי · 02.10</h2><div class="route-code">📍 טביליסי</div></div><div class="plane">🏛️</div></div>
+      <div class="perforation"></div>
+      <ul class="timeline">
+        <li class="event"><div class="time">09:00</div><div class="icon">🍳</div><div class="event-body"><div class="event-phase">ארוחת בוקר</div><div class="event-desc">במלון / קפה סמוך בעיר העתיקה</div></div></li>
+        <li class="event"><div class="time">10:00</div><div class="icon">🚡</div><div class="event-body"><div class="event-phase">בוקר</div><div class="event-desc">רכבל, מצודת נאריקלה, מטאחי פלאטו</div></div></li>
+        <li class="event"><div class="time">13:00</div><div class="icon">💆</div><div class="event-body"><div class="event-phase">פעילות צהריים</div><div class="event-desc">ספא (מרחצאות אורבלאני · Chreli Abano)</div></div></li>
+        <li class="event"><div class="time">15:00</div><div class="icon">🥩</div><div class="event-body"><div class="event-phase">ארוחת צהריים</div><div class="event-desc">בשרים (Organique Josper / Sakhli 11)</div></div></li>
+        <li class="event event--special"><div class="stamp">♠ VIP</div><div class="time">18:30</div><div class="icon">🎰</div><div class="event-body"><div class="event-phase">ערב · טורניר פוקר</div><div class="event-desc">קזינו. חברים: יין (8000 Vintages)</div></div></li>
+      </ul>
+      <div class="picks"><div class="picks-label">✦ הבחירות שלך</div><div class="picks-list" data-day="day2" data-hint="גרור לכאן אטרקציות · מסעדות · ברים"></div></div>
+    </section>
+
+    <!-- DAY 3 -->
+    <section class="day-card" id="day3" data-city="tbilisi">
+      <div class="stub"><div class="daynum">03</div><div class="info"><h2>יום שבת · 03.10</h2><div class="route-code">📍 טביליסי</div></div><div class="plane">🎪</div></div>
+      <div class="perforation"></div>
+      <ul class="timeline">
+        <li class="event"><div class="time">09:30</div><div class="icon">🥐</div><div class="event-body"><div class="event-phase">ארוחת בוקר</div><div class="event-desc">חצ'פורי וקינוחים (Cafe Stamba)</div></div></li>
+        <li class="event"><div class="time">11:00</div><div class="icon">🛍️</div><div class="event-body"><div class="event-phase">בוקר</div><div class="event-desc">קניות וסיבוב (שדרות רוסטבלי)</div></div></li>
+        <li class="event"><div class="time">13:30</div><div class="icon">🎪</div><div class="event-body"><div class="event-phase">פעילות צהריים</div><div class="event-desc">פסטיבל Tbilisoba (אם פעיל) / סמטאות העיר העתיקה</div></div></li>
+        <li class="event"><div class="time">15:00</div><div class="icon">🥖</div><div class="event-body"><div class="event-phase">ארוחת צהריים</div><div class="event-desc">מאפים ואוכל קל (Puri Guliani)</div></div></li>
+        <li class="event"><div class="time">21:00</div><div class="icon">🎶</div><div class="event-body"><div class="event-phase">ערב</div><div class="event-desc">חיי לילה · רחוב Shardeni / מועדון (סופ״ש = Bassiani)</div></div></li>
+      </ul>
+      <div class="picks"><div class="picks-label">✦ הבחירות שלך</div><div class="picks-list" data-day="day3" data-hint="גרור לכאן אטרקציות · מסעדות · ברים"></div></div>
+    </section>
+
+    <!-- DAY 4 -->
+    <section class="day-card" id="day4" data-city="tbilisi">
+      <div class="stub"><div class="daynum">04</div><div class="info"><h2>יום ראשון · 04.10</h2><div class="route-code">📍 טביליסי</div></div><div class="plane">🌶️</div></div>
+      <div class="perforation"></div>
+      <ul class="timeline">
+        <li class="event"><div class="time">09:00</div><div class="icon">🥐</div><div class="event-body"><div class="event-phase">ארוחת בוקר</div><div class="event-desc">מאפים קלאסיים (Entrée / Leila's Tone)</div></div></li>
+        <li class="event"><div class="time">10:30</div><div class="icon">🌶️</div><div class="event-body"><div class="event-phase">בוקר</div><div class="event-desc">אותנטיות, תבלינים, קניות (שוק Dezerter)</div></div></li>
+        <li class="event"><div class="time">13:00</div><div class="icon">🍷</div><div class="event-body"><div class="event-phase">פעילות צהריים</div><div class="event-desc">טעימת יין (Vino Underground) / מזכרות</div></div></li>
+        <li class="event"><div class="time">14:30</div><div class="icon">🥟</div><div class="event-body"><div class="event-phase">ארוחת צהריים</div><div class="event-desc">אווירת חצר, חינקלי (Sofia Melnikovas)</div></div></li>
+        <li class="event"><div class="time">20:30</div><div class="icon">🏭</div><div class="event-body"><div class="event-phase">ערב</div><div class="event-desc">אוכל וברים (Fabrika) / ג'אז (Jazz Club Tbilisi)</div></div></li>
+      </ul>
+      <div class="picks"><div class="picks-label">✦ הבחירות שלך</div><div class="picks-list" data-day="day4" data-hint="גרור לכאן אטרקציות · מסעדות · ברים"></div></div>
+    </section>
+
+    <!-- DAY 5 -->
+    <section class="day-card" id="day5" data-city="transit-tk">
+      <div class="stub"><div class="daynum">05</div><div class="info"><h2>יום שני · 05.10</h2><div class="route-code">TBS → KAZ</div></div><div class="plane">🚙</div></div>
+      <div class="perforation"></div>
+      <ul class="timeline">
+        <li class="event"><div class="time">09:00</div><div class="icon">🍳</div><div class="event-body"><div class="event-phase">ארוחת בוקר</div><div class="event-desc">במלון + צ'ק אאוט (טביליסי)</div></div></li>
+        <li class="event"><div class="time">10:00</div><div class="icon">🛣️</div><div class="event-body"><div class="event-phase">בוקר</div><div class="event-desc">יציאה צפונה (הדרך הצבאית, נהג צמוד)</div></div></li>
+        <li class="event"><div class="time">12:00</div><div class="icon">🏰</div><div class="event-body"><div class="event-phase">פעילות צהריים</div><div class="event-desc">מצודת אנאנורי, מפגש הנהרות, מונומנט הידידות</div></div></li>
+        <li class="event"><div class="time">14:30</div><div class="icon">🍢</div><div class="event-body"><div class="event-phase">ארוחת צהריים</div><div class="event-desc">שישליק וחינקלי בדרך (Tiba / Pasanauri)</div></div></li>
+        <li class="event"><div class="time">18:00</div><div class="icon">🏔️</div><div class="event-body"><div class="event-phase">ערב</div><div class="event-desc">צ'ק-אין (1740 Boutique), מנת שקמרולי (Kazbegi Good Food)</div></div></li>
+      </ul>
+      <div class="picks"><div class="picks-label">✦ הבחירות שלך</div><div class="picks-list" data-day="day5" data-hint="גרור לכאן אטרקציות בדרך · מסעדות"></div></div>
+    </section>
+
+    <!-- DAY 6 -->
+    <section class="day-card" id="day6" data-city="kazbegi">
+      <div class="stub"><div class="daynum">06</div><div class="info"><h2>יום שלישי · 06.10</h2><div class="route-code">📍 קזבגי</div></div><div class="plane">⛪</div></div>
+      <div class="perforation"></div>
+      <ul class="timeline">
+        <li class="event"><div class="time">08:30</div><div class="icon">🍳</div><div class="event-body"><div class="event-phase">ארוחת בוקר</div><div class="event-desc">במלון (קזבגי)</div></div></li>
+        <li class="event"><div class="time">10:00</div><div class="icon">⛪</div><div class="event-body"><div class="event-phase">בוקר</div><div class="event-desc">עלייה לכנסיית השילוש הקדוש (Gergeti)</div></div></li>
+        <li class="event"><div class="time">12:30</div><div class="icon">💦</div><div class="event-body"><div class="event-phase">פעילות צהריים</div><div class="event-desc">מסלול קצר למפלי גוולטי (Gveleti)</div></div></li>
+        <li class="event"><div class="time">15:00</div><div class="icon">🍲</div><div class="event-body"><div class="event-phase">ארוחת צהריים</div><div class="event-desc">תצפית ואוכל (Panorama Kazbegi)</div></div></li>
+        <li class="event"><div class="time">19:00</div><div class="icon">🥂</div><div class="event-body"><div class="event-phase">ערב</div><div class="event-desc">דרינקים מול ההר (Rooms Hotel)</div></div></li>
+      </ul>
+      <div class="picks"><div class="picks-label">✦ הבחירות שלך</div><div class="picks-list" data-day="day6" data-hint="גרור לכאן אטרקציות קזבגי · מסעדות"></div></div>
+    </section>
+
+    <!-- DAY 7 -->
+    <section class="day-card" id="day7" data-city="kazbegi">
+      <div class="stub"><div class="daynum">07</div><div class="info"><h2>יום רביעי · 07.10</h2><div class="route-code">📍 קזבגי</div></div><div class="plane">⛰️</div></div>
+      <div class="perforation"></div>
+      <ul class="timeline">
+        <li class="event"><div class="time">08:30</div><div class="icon">🍳</div><div class="event-body"><div class="event-phase">ארוחת בוקר</div><div class="event-desc">במלון (קזבגי)</div></div></li>
+        <li class="event"><div class="time">10:00</div><div class="icon">🥾</div><div class="event-body"><div class="event-phase">בוקר</div><div class="event-desc">נסיעה לטבע, תחילת מסלול</div></div></li>
+        <li class="event"><div class="time">11:30</div><div class="icon">🏞️</div><div class="event-body"><div class="event-phase">פעילות צהריים</div><div class="event-desc">הליכה ונופים (עמק ג'וטה / עמק טרוסו)</div></div></li>
+        <li class="event"><div class="time">14:00</div><div class="icon">🧺</div><div class="event-body"><div class="event-phase">ארוחת צהריים</div><div class="event-desc">פיקניק או מסעדה מקומית בעמק</div></div></li>
+        <li class="event"><div class="time">19:00</div><div class="icon">🍖</div><div class="event-body"><div class="event-phase">ערב</div><div class="event-desc">בשרים מעושנים (Terravino Kazbegi)</div></div></li>
+      </ul>
+      <div class="picks"><div class="picks-label">✦ הבחירות שלך</div><div class="picks-list" data-day="day7" data-hint="גרור לכאן אטרקציות קזבגי · מסעדות"></div></div>
+    </section>
+
+    <!-- DAY 8 -->
+    <section class="day-card" id="day8" data-city="transit-kt">
+      <div class="stub"><div class="daynum">08</div><div class="info"><h2>יום חמישי · 08.10</h2><div class="route-code">KAZ → TBS</div></div><div class="plane">🚙</div></div>
+      <div class="perforation"></div>
+      <ul class="timeline">
+        <li class="event"><div class="time">09:00</div><div class="icon">🍳</div><div class="event-body"><div class="event-phase">ארוחת בוקר</div><div class="event-desc">במלון + צ'ק אאוט (קזבגי)</div></div></li>
+        <li class="event"><div class="time">10:00</div><div class="icon">🛣️</div><div class="event-body"><div class="event-phase">בוקר</div><div class="event-desc">נסיעה דרומה, חזרה לטביליסי</div></div></li>
+        <li class="event"><div class="time">13:30</div><div class="icon">🏙️</div><div class="event-body"><div class="event-phase">פעילות צהריים</div><div class="event-desc">צ'ק-אין (Mukhrantubani), מנוחה בעיר</div></div></li>
+        <li class="event"><div class="time">15:00</div><div class="icon">🥟</div><div class="event-body"><div class="event-phase">ארוחת צהריים</div><div class="event-desc">חינקלי (Pasanauri / Zodiako)</div></div></li>
+        <li class="event event--special"><div class="stamp">♠ VIP</div><div class="time">18:30</div><div class="icon">🎰</div><div class="event-body"><div class="event-phase">ערב · טורניר פוקר</div><div class="event-desc">קזינו. חברים: בר רגוע (Dedaena / Meoba)</div></div></li>
+      </ul>
+      <div class="picks"><div class="picks-label">✦ הבחירות שלך</div><div class="picks-list" data-day="day8" data-hint="גרור לכאן אטרקציות · מסעדות · ברים"></div></div>
+    </section>
+
+    <!-- DAY 9 -->
+    <section class="day-card" id="day9" data-city="tbilisi">
+      <div class="stub"><div class="daynum">09</div><div class="info"><h2>יום שישי · 09.10</h2><div class="route-code">📍 טביליסי · עזיבה</div></div><div class="plane">🛫</div></div>
+      <div class="perforation"></div>
+      <ul class="timeline">
+        <li class="event"><div class="time">09:30</div><div class="icon">🍳</div><div class="event-body"><div class="event-phase">ארוחת בוקר</div><div class="event-desc">במלון + צ'ק אאוט (שמירת חפצים)</div></div></li>
+        <li class="event"><div class="time">11:00</div><div class="icon">✅</div><div class="event-body"><div class="event-phase">בוקר</div><div class="event-desc">סגירות אחרונות, השלמות קניות</div></div></li>
+        <li class="event"><div class="time">13:30</div><div class="icon">☕</div><div class="event-body"><div class="event-phase">פעילות צהריים</div><div class="event-desc">זמן חופשי / בית קפה</div></div></li>
+        <li class="event"><div class="time">15:00</div><div class="icon">🥟</div><div class="event-body"><div class="event-phase">ארוחת צהריים</div><div class="event-desc">חינקלי פרידה (Amra / Zodiako)</div></div></li>
+        <li class="event"><div class="time">19:45</div><div class="icon">✈️</div><div class="event-body"><div class="event-phase">ערב</div><div class="event-desc">איסוף לשדה התעופה. טיסה ב-23:00</div></div></li>
+      </ul>
+      <div class="picks"><div class="picks-label">✦ הבחירות שלך</div><div class="picks-list" data-day="day9" data-hint="גרור לכאן אטרקציות · מסעדות · ברים"></div></div>
+    </section>
+
+  </main>
+
+  <div class="footer">✂ מסלול טיול אישי · גאורגיה · גרור אופציות מהבנק · שמור כ-PDF דרך תפריט ההדפסה</div>
+</div>
+
+<!-- ================= BACKDROP ================= -->
+<div class="backdrop" id="backdrop"></div>
+
+<!-- ================= BANK DRAWER ================= -->
+<aside class="drawer bank" id="bankDrawer">
+  <div class="drawer-head">
+    <span style="font-size:22px">🎒</span>
+    <h3>בנק אופציות<span class="sub">בחר קטגוריה · לחיצה ארוכה כדי לגרור ליום</span></h3>
+    <button class="drawer-close" data-close>×</button>
+  </div>
+  <div class="cats" id="cats"></div>
+  <div class="bank-hint">👆 לחיצה ארוכה על אופציה ← גרור אל היום הרצוי</div>
+  <div class="items" id="items"></div>
+</aside>
+
+<!-- ================= DETAILS DRAWER ================= -->
+<aside class="drawer details" id="detailsDrawer">
+  <div class="drawer-head">
+    <span style="font-size:22px">📋</span>
+    <h3>פרטי הטיול<span class="sub">תקציב · טיסות · מלונות · הערות</span></h3>
+    <button class="drawer-close" data-close>×</button>
+  </div>
+  <div class="body">
+
+    <div class="d-card d-total">
+      <h4>💰 עלות סופית לאדם</h4>
+      <div class="d-big">5,750 ₪<small>כולל מוניות, אוכל והכל · לאדם</small></div>
+      <div class="kv"><span class="k">מקרה הכי גרוע (כולל אוכל)</span><span class="v">5,583 ₪</span></div>
+      <div class="kv"><span class="k">טיסה + מלונות בלבד</span><span class="v">3,100 ₪</span></div>
+    </div>
+
+    <div class="d-card">
+      <h4>✈️ טיסות (ארקיע)</h4>
+      <div class="kv"><span class="k">מחיר לאדם <small>עם תיק גב בלבד</small></span><span class="v">1,223 ₪</span></div>
+      <div class="kv"><span class="k">תוספת טרולי <small>אופציונלי</small></span><span class="v">~30 $</span></div>
+      <div class="kv"><span class="k">נחיתה בטביליסי</span><span class="v">01.10 · 21:45</span></div>
+      <div class="kv"><span class="k">טיסה חזרה</span><span class="v">09.10 · 23:00</span></div>
+      <div class="kv"><span class="k">איסוף לשדה</span><span class="v">09.10 · 19:45</span></div>
+    </div>
+
+    <div class="d-card">
+      <h4>🏨 מלונות ותאריכים</h4>
+      <div class="stay"><span class="dot" style="background:var(--wine)"></span><div class="s-body"><div class="s-t">Mukhrantubani Boutique</div><div class="s-n">טביליסי · 4 לילות</div></div><span class="s-date">01–05.10</span></div>
+      <div class="stay"><span class="dot" style="background:var(--alpine)"></span><div class="s-body"><div class="s-t">1740 Boutique Hotel</div><div class="s-n">קזבגי · 3 לילות</div></div><span class="s-date">05–08.10</span></div>
+      <div class="stay"><span class="dot" style="background:var(--wine)"></span><div class="s-body"><div class="s-t">Mukhrantubani Boutique</div><div class="s-n">טביליסי · 1 לילה</div></div><span class="s-date">08–09.10</span></div>
+    </div>
+
+    <div class="d-card">
+      <h4>🧾 פירוט מלונות (סה״כ ל-3)</h4>
+      <div class="kv"><span class="k">טביליסי · Mukhrantubani</span><span class="v">1,568 ₪</span></div>
+      <div class="kv"><span class="k">קזבגי · 1740 Boutique</span><span class="v">1,779 ₪</span></div>
+      <div class="kv"><span class="k">טביליסי · Mukhrantubani</span><span class="v">2,288 ₪</span></div>
+      <div class="kv"><span class="k">סה״כ מלונות לאדם</span><span class="v">1,870 ₪</span></div>
+    </div>
+
+    <div class="d-card">
+      <h4>👥 פרטים כלליים</h4>
+      <div class="kv"><span class="k">מטיילים</span><span class="v">3 אנשים</span></div>
+      <div class="kv"><span class="k">משך</span><span class="v">9 ימים / 8 לילות</span></div>
+      <div class="kv"><span class="k">יעדים</span><span class="v">טביליסי · קזבגי</span></div>
+      <div class="kv"><span class="k">אירועים</span><span class="v">♠ 2 טורנירי פוקר</span></div>
+    </div>
+
+    <div class="d-card">
+      <h4>📝 הערות</h4>
+      <div class="note-line"><span>🎒</span><span>טסים עם תיק גב בלבד — תוספת טרולי לפי צורך (~30$).</span></div>
+      <div class="note-line"><span>🚕</span><span>תחבורה פנימית ב-Bolt / נהג צמוד להרים (הדרך הצבאית).</span></div>
+      <div class="note-line"><span>🖤</span><span>Bassiani — קוד לבוש שחור בלבד. מועדונים חזקים לסופ״ש.</span></div>
+      <div class="note-line"><span>💾</span><span>הבחירות שלך נשמרות אוטומטית במכשיר.</span></div>
+      <button class="reset-btn" id="resetPicks">🗑️ נקה את כל הבחירות</button>
+    </div>
+
+  </div>
+</aside>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   OPTIONS BANK DATA
+   ============================================================ */
+const BANK = [
+  { id:'attr-tbilisi', label:'אטרקציות טביליסי', emoji:'🏛️', items:[
+    {ic:'🏰', t:'מצודת נאריקלה', n:'Narikala · תצפית על העיר'},
+    {ic:'🌆', t:'מטאחי פלאטו', n:'Metekhi Rise · נוף העיר'},
+    {ic:'🍸', t:'רחוב קיאצ׳לי', n:'Kiacheli · רחוב של ברים'},
+    {ic:'💆', t:'מרחצאות אורבלאני', n:'Chreli Abano · בית מרחץ וספא'},
+    {ic:'🏙️', t:'רחוב שרדן', n:'Sharden · העיר העתיקה'},
+    {ic:'🛍️', t:'שדרות רוסטבלי', n:'Rustaveli · קניות'},
+    {ic:'🧺', t:'שוק דזרטר', n:'Dezerter Bazaar · שוק אוכל'},
+    {ic:'🍷', t:'Vino Underground', n:'חנות ובר יין'},
+    {ic:'🍇', t:'8000 Vintages', n:'טעימות יינות ואוכל'},
+    {ic:'🎪', t:'פסטיבל Tbilisoba', n:'פסטיבל העיר (אם פעיל)'},
+  ]},
+  { id:'road', label:'בדרך לקזבגי', emoji:'🛣️', items:[
+    {ic:'🏰', t:'מצודת אנאנורי', n:'Ananuri Fortress'},
+    {ic:'🗿', t:'מונומנט הידידות', n:'Russia–Georgia · גודאורי'},
+    {ic:'⛰️', t:'מעבר ג׳ווארי', n:'Jvari Pass · נביעת מים מינרליים'},
+    {ic:'🌊', t:'מפגש הנהרות', n:'Black & White Aragvi'},
+    {ic:'🥟', t:'Pasanauri', n:'חינקלי ולחם מקומי בדרך'},
+  ]},
+  { id:'attr-kazbegi', label:'אטרקציות קזבגי', emoji:'⛰️', items:[
+    {ic:'⛪', t:'כנסיית השילוש הקדוש', n:'Gergeti Trinity'},
+    {ic:'💦', t:'מפלי גוולטי', n:'Gveleti Waterfalls'},
+    {ic:'🏞️', t:'עמק ג׳וטה', n:'Juta Valley'},
+    {ic:'🌄', t:'עמק טרוסו', n:'Truso Valley'},
+    {ic:'🏨', t:'מלון Rooms', n:'מרפסת ונוף מול ההר'},
+  ]},
+  { id:'food-tbilisi', label:'מסעדות טביליסי', emoji:'🍽️', items:[
+    {ic:'🥟', t:'Pasanauri', n:'חינקלי חזק'},
+    {ic:'🥟', t:'Zodiako', n:'חינקלי'},
+    {ic:'🥩', t:'Organique Josper Bar', n:'בשרים'},
+    {ic:'🥩', t:'Sakhli 11', n:'בשרים'},
+    {ic:'✨', t:'Amra', n:'מסעדה ברמה'},
+    {ic:'🥐', t:'Puri Guliani', n:'חצ׳פורי, מאפים, קינוחים'},
+    {ic:'🍰', t:'Cafe Stamba', n:'חצ׳פורי וקינוחים'},
+    {ic:'🥖', t:'Entrée', n:'מאפים'},
+    {ic:'🧀', t:'Leila\'s Tone', n:'חצ׳פורי Penovani'},
+    {ic:'🍔', t:'Coca-Cola Diner', n:'אוכל מהיר'},
+    {ic:'🍔', t:'Sofia Melnikovas', n:'חינקלי והמבורגר'},
+    {ic:'🎶', t:'Tsiskvili', n:'פתיחת שולחן · הכי חזק'},
+    {ic:'🎶', t:'דזבלי טאוורן', n:'פתיחת שולחן'},
+    {ic:'🎶', t:'Sormoni', n:'פתיחת שולחן'},
+    {ic:'🎶', t:'Ethno Home', n:'פתיחת שולחן'},
+  ]},
+  { id:'food-kazbegi', label:'מסעדות קזבגי והדרך', emoji:'🍲', items:[
+    {ic:'🏔️', t:'Panorama Kazbegi / Kobi', n:'אוכל עם נוף'},
+    {ic:'🍗', t:'Kazbegi Good Food', n:'מנת שקמרולי (Shkmeruli)'},
+    {ic:'🍢', t:'Tiba Restaurant', n:'חינקלי ושישליק'},
+    {ic:'🍖', t:'Terravino Kazbegi', n:'נקניקיות ובשרים מעושנים'},
+    {ic:'🍽️', t:'Rooms Restaurant', n:'מסעדת מלון Rooms'},
+    {ic:'🍽️', t:'Maisi Restaurant', n:'מסעדה בקזבגי'},
+  ]},
+  { id:'bars', label:'ברים וחיי לילה', emoji:'🍸', items:[
+    {ic:'🍸', t:'Shardeni Street', n:'ברים וחיי לילה, המון תיירים'},
+    {ic:'🏭', t:'Fabrika', n:'אוכל וברים היפסטרי · מהחזקים · לא סופ״ש'},
+    {ic:'🍹', t:'Dedaena Bar', n:'בר-מועדון בפארק · מהחזקים · לא סופ״ש'},
+    {ic:'🎶', t:'Cafe Gallery', n:'בר-מועדון, שירים אחרי חצות · לא סופ״ש'},
+    {ic:'🦁', t:'Shavi Lomi', n:'Black Lion · בר תדלוק'},
+    {ic:'🍺', t:'Meoba Bar', n:'בר תדלוק'},
+    {ic:'🍸', t:'Warszawa', n:'בר תדלוק'},
+    {ic:'🦉', t:'Drunk Owl Bar', n:'בר תדלוק'},
+    {ic:'🎷', t:'Jazz Club Tbilisi', n:'מועדון ג׳אז'},
+    {ic:'🎧', t:'Liva Club', n:'מועדון · לא לסופ״ש'},
+    {ic:'🍷', t:'Vino Underground', n:'בר יין'},
+    {ic:'🍇', t:'8000 Vintages', n:'טעימות יין ואוכל'},
+  ]},
+  { id:'clubs', label:'מועדונים (לפי עוצמה)', emoji:'🔊', items:[
+    {ic:'🥇', t:'Bassiani', n:'#1 הכי חזק בטביליסי · לבוש שחור בלבד'},
+    {ic:'🌉', t:'Khidi (Bridge)', n:'#2 חזק, חצי פתוח, טוב לקיץ'},
+    {ic:'🎶', t:'Mtkvarze', n:'#3 רגוע יותר אך מהחזקים'},
+    {ic:'🎧', t:'Left Bank', n:'#4 מגוון · טוב לראשון/רביעי'},
+  ]},
+];
+
+/* ============================================================
+   ELEMENTS + STATE
+   ============================================================ */
+const catsEl = document.getElementById('cats');
+const itemsEl = document.getElementById('items');
+const bankDrawer = document.getElementById('bankDrawer');
+const detailsDrawer = document.getElementById('detailsDrawer');
+const backdrop = document.getElementById('backdrop');
+const toastEl = document.getElementById('toast');
+let activeCat = BANK[0].id;
+
+const STORE_KEY = 'geo-trip-picks-v1';
+let store = {};
+try{ store = JSON.parse(localStorage.getItem(STORE_KEY)||'{}'); }catch(e){ store={}; }
+function save(){ localStorage.setItem(STORE_KEY, JSON.stringify(store)); }
+
+/* ============================================================
+   RENDER BANK
+   ============================================================ */
+function renderCats(){
+  catsEl.innerHTML='';
+  BANK.forEach(c=>{
+    const b=document.createElement('button');
+    b.className='cat-pill'+(c.id===activeCat?' active':'');
+    b.innerHTML=`<span>${c.emoji}</span> ${c.label}`;
+    b.onclick=()=>{ activeCat=c.id; renderCats(); renderItems(); itemsEl.scrollTop=0; };
+    catsEl.appendChild(b);
+  });
+}
+function renderItems(){
+  const cat=BANK.find(c=>c.id===activeCat);
+  itemsEl.innerHTML='';
+  cat.items.forEach(it=>{
+    const el=document.createElement('div');
+    el.className='item';
+    el.innerHTML=`<div class="i-ic">${it.ic}</div><div class="i-main"><div class="i-t">${it.t}</div><div class="i-n">${it.n}</div></div><div class="i-grip">⋮⋮</div>`;
+    attachDrag(el, {ic:it.ic, t:it.t, n:it.n, cat:cat.id});
+    itemsEl.appendChild(el);
+  });
+}
+
+/* ============================================================
+   PICKS (dropped items) per day
+   ============================================================ */
+function renderPicks(day){
+  const list=document.querySelector(`.picks-list[data-day="${day}"]`);
+  if(!list) return;
+  list.innerHTML='';
+  (store[day]||[]).forEach((p,idx)=>{
+    const chip=document.createElement('span');
+    chip.className='pick cat-'+p.cat;
+    chip.innerHTML=`<span class="p-ic">${p.ic}</span><span class="p-t">${p.t}</span><button class="p-x" aria-label="הסר">×</button>`;
+    chip.querySelector('.p-x').onclick=()=>{ store[day].splice(idx,1); if(!store[day].length) delete store[day]; save(); renderPicks(day); };
+    list.appendChild(chip);
+  });
+}
+function renderAllPicks(){ document.querySelectorAll('.picks-list').forEach(l=>renderPicks(l.dataset.day)); }
+function addPick(day,data){
+  store[day]=store[day]||[];
+  if(store[day].some(p=>p.t===data.t)){ toast('כבר קיים ביום הזה'); return; }
+  store[day].push({ic:data.ic,t:data.t,cat:data.cat});
+  save(); renderPicks(day);
+  toast(`${data.ic} נוסף · ${dayName(day)}`);
+}
+function dayName(day){ const n=day.replace('day',''); return 'יום '+n; }
+
+/* ============================================================
+   DRAG ENGINE (pointer events · long-press on touch)
+   ============================================================ */
+let drag=null, pressItem=null, pressTimer=null, startX=0, startY=0, ptrType='mouse', lpReady=false, autoRAF=null, autoDir=0;
+const isOverlay=()=>window.matchMedia('(max-width:1179px)').matches;
+
+function attachDrag(el, data){
+  el.addEventListener('pointerdown', e=>{
+    if(e.button && e.button!==0) return;
+    startX=e.clientX; startY=e.clientY; ptrType=e.pointerType||'mouse'; lpReady=false;
+    pressItem={el,data};
+    el.classList.add('pressing');
+    if(ptrType!=='mouse'){
+      pressTimer=setTimeout(()=>{ lpReady=true; vibrate(15); beginDrag(e); }, 320);
+    }
+  });
+}
+
+document.addEventListener('pointermove', e=>{
+  if(drag){ e.preventDefault(); moveGhost(e.clientX,e.clientY); updateTarget(e.clientX,e.clientY); edgeScroll(e.clientY); return; }
+  if(!pressItem) return;
+  const dist=Math.hypot(e.clientX-startX, e.clientY-startY);
+  if(ptrType==='mouse'){ if(dist>6) beginDrag(e); }
+  else { if(!lpReady && dist>12) cancelPress(); }
+}, {passive:false});
+
+document.addEventListener('pointerup', e=>{ if(drag) finishDrop(e); else cancelPress(); });
+document.addEventListener('pointercancel', ()=>{ if(drag) abortDrag(); else cancelPress(); });
+
+function cancelPress(){ clearTimeout(pressTimer); if(pressItem){ pressItem.el.classList.remove('pressing'); } pressItem=null; }
+
+function beginDrag(e){
+  if(!pressItem) return;
+  const d=pressItem.data;
+  drag={data:d};
+  pressItem.el.classList.remove('pressing');
+  pressItem.el.classList.add('lifted');
+  drag.sourceEl=pressItem.el;
+  // ghost
+  const g=document.createElement('div');
+  g.className='ghost';
+  g.innerHTML=`<span class="pick cat-${d.cat}"><span class="p-ic">${d.ic}</span><span class="p-t">${d.t}</span></span>`;
+  document.body.appendChild(g);
+  drag.ghost=g;
+  moveGhost(e.clientX,e.clientY);
+  if(isOverlay()) closeDrawers(); // reveal the days on mobile
+  document.body.style.userSelect='none';
+}
+function moveGhost(x,y){ if(drag&&drag.ghost){ drag.ghost.style.left=x+'px'; drag.ghost.style.top=y+'px'; } }
+
+function updateTarget(x,y){
+  if(drag&&drag.ghost) drag.ghost.style.display='none';
+  const under=document.elementFromPoint(x,y);
+  if(drag&&drag.ghost) drag.ghost.style.display='';
+  const card=under?under.closest('.day-card'):null;
+  if(card!==drag.target){
+    if(drag.target) drag.target.classList.remove('drop-target');
+    drag.target=card;
+    if(card) card.classList.add('drop-target');
+  }
+}
+
+function edgeScroll(y){
+  const top=90, bot=window.innerHeight-90;
+  let dir=0;
+  if(y<top) dir=-1; else if(y>bot) dir=1;
+  if(dir!==autoDir){
+    autoDir=dir;
+    if(autoRAF){ cancelAnimationFrame(autoRAF); autoRAF=null; }
+    if(dir!==0){
+      const step=()=>{ window.scrollBy(0, dir*11); if(drag){ updateTarget(lastX,lastY); } autoRAF=requestAnimationFrame(step); };
+      autoRAF=requestAnimationFrame(step);
+    }
+  }
+}
+let lastX=0,lastY=0;
+document.addEventListener('pointermove', e=>{ lastX=e.clientX; lastY=e.clientY; });
+
+function cleanupDrag(){
+  if(autoRAF){ cancelAnimationFrame(autoRAF); autoRAF=null; } autoDir=0;
+  if(drag){
+    if(drag.ghost) drag.ghost.remove();
+    if(drag.target) drag.target.classList.remove('drop-target');
+    if(drag.sourceEl) drag.sourceEl.classList.remove('lifted');
+  }
+  document.body.style.userSelect='';
+  pressItem=null; clearTimeout(pressTimer);
+}
+function finishDrop(){
+  const target=drag.target, data=drag.data;
+  cleanupDrag();
+  drag=null;
+  if(target){ addPick(target.id, data); }
+}
+function abortDrag(){ cleanupDrag(); drag=null; }
+
+/* ============================================================
+   DRAWERS
+   ============================================================ */
+function openDrawer(which){
+  closeDrawers();
+  if(which==='bank'){ bankDrawer.classList.add('open'); if(isOverlay()){ backdrop.classList.add('show'); } }
+  else { detailsDrawer.classList.add('open'); backdrop.classList.add('show'); }
+}
+function closeDrawers(){
+  detailsDrawer.classList.remove('open');
+  if(isOverlay()) bankDrawer.classList.remove('open');
+  backdrop.classList.remove('show');
+}
+document.getElementById('openBank').onclick=()=>openDrawer('bank');
+document.getElementById('openDetails').onclick=()=>openDrawer('details');
+backdrop.onclick=closeDrawers;
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeDrawers);
+document.getElementById('resetPicks').onclick=()=>{
+  if(confirm('לנקות את כל הבחירות מכל הימים?')){ store={}; save(); renderAllPicks(); toast('הבחירות נוקו'); }
+};
+
+/* smooth day-nav */
+document.querySelectorAll('.day-nav a').forEach(a=>{
+  a.addEventListener('click',e=>{ e.preventDefault(); document.querySelector(a.getAttribute('href')).scrollIntoView({behavior:'smooth',block:'start'}); });
+});
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+let toastT=null;
+function toast(msg){ toastEl.textContent=msg; toastEl.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>toastEl.classList.remove('show'),1600); }
+function vibrate(ms){ if(navigator.vibrate){ try{navigator.vibrate(ms);}catch(e){} } }
+
+/* ============================================================
+   INIT
+   ============================================================ */
+renderCats();
+renderItems();
+renderAllPicks();
+</script>
+</body>
+</html>
